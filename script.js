@@ -80,13 +80,41 @@ cepInput.addEventListener("input", (event) => {
   if (digits.length === 8) buscarCEP(digits);
 });
 
+// Consulta ViaCEP; se falhar ou retornar erro, cai para a BrasilAPI.
+// Devolve { logradouro, bairro, localidade, uf } ou null (CEP inexistente nos dois).
+async function consultarCEP(digits) {
+  try {
+    const res  = await fetch("https://viacep.com.br/ws/" + digits + "/json/");
+    if (res.ok) {
+      const data = await res.json();
+      if (!data.erro) {
+        return {
+          logradouro: data.logradouro || "",
+          bairro:     data.bairro || "",
+          localidade: data.localidade || "",
+          uf:         data.uf || ""
+        };
+      }
+    }
+  } catch (_) { /* tenta o fallback abaixo */ }
+
+  const res2  = await fetch("https://brasilapi.com.br/api/cep/v2/" + digits);
+  if (!res2.ok) return null; // 404 = CEP inexistente
+  const data2 = await res2.json();
+  return {
+    logradouro: data2.street || "",
+    bairro:     data2.neighborhood || "",
+    localidade: data2.city || "",
+    uf:         data2.state || ""
+  };
+}
+
 async function buscarCEP(digits) {
   cepStatus.textContent = "Buscando...";
   cepStatus.className = "cep-status loading";
   try {
-    const res  = await fetch("https://viacep.com.br/ws/" + digits + "/json/");
-    const data = await res.json();
-    if (data.erro) {
+    const data = await consultarCEP(digits);
+    if (!data) {
       cepStatus.textContent = "CEP não encontrado.";
       cepStatus.className   = "cep-status error";
       return;
