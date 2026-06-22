@@ -318,21 +318,17 @@
 
     loading.textContent = 'Carregando pedidos…';
 
-    var cb = 'dolcidri_cb_' + Date.now();
-    window[cb] = function(data) {
-      delete window[cb];
-      todosPedidos         = data.pedidos || [];
-      loading.style.display = 'none';
-      renderizarFiltro();
-      atualizarContador();
-    };
-
-    var s   = document.createElement('script');
-    s.src   = SCRIPT_URL + '?action=listar&callback=' + cb;
-    s.onerror = function() {
-      loading.textContent = 'Erro ao carregar. Verifique o SCRIPT_URL e tente atualizar.';
-    };
-    document.head.appendChild(s);
+    fetch(SCRIPT_URL + '?action=listar')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        todosPedidos = data.pedidos || [];
+        loading.style.display = 'none';
+        renderizarFiltro();
+        atualizarContador();
+      })
+      .catch(function() {
+        loading.textContent = 'Erro ao carregar. Verifique o SCRIPT_URL e tente atualizar.';
+      });
   }
 
   // ── Filtros ───────────────────────────────────────────────────
