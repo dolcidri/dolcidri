@@ -754,4 +754,35 @@ code {
   .order-form {
     padding: 20px;
   }
+
+  /* Botões do formulário empilhados */
+  .form-actions {
+    flex-direction: column;
+  }
+
+  /* CEP ocupa largura total */
+  .cep-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .cep-row input {
+    width: 100%;
+  }
+
+  /* Remove altura mínima dos parágrafos de card (desnecessária em coluna única) */
+  .product-card p {
+    min-height: 0;
+  }
+
+  /* Borda menor na foto de destaque da seção artesanal */
+  .craft-media img {
+    border-width: 6px;
+  }
+
+  /* Imagem do card ligeiramente mais alta em coluna única */
+  .product-card img,
+  .product-card video {
+    aspect-ratio: 5 / 4;
+  }
 }
