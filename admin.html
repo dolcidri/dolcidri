@@ -353,7 +353,10 @@
       : todosPedidos.filter(function(p) { return p.status === filtroAtual; });
 
     if (exibir.length === 0) {
-      lista.innerHTML     = '';
+      lista.innerHTML = '';
+      vazio.textContent = todosPedidos.length === 0
+        ? 'Nenhum pedido cadastrado ainda. Os pedidos aparecerão aqui assim que chegarem pelo site.'
+        : 'Nenhum pedido nesta categoria.';
       vazio.style.display = '';
     } else {
       vazio.style.display = 'none';

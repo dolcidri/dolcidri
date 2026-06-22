@@ -195,6 +195,31 @@ function resetForm() {
   dateInput.min = d.toISOString().slice(0, 10);
 }
 
+// Encoder para URLs do WhatsApp: garante UTF-8 de 4 bytes para emoji (SMP)
+// encodeURIComponent pode gerar CESU-8 (%ED... %ED...) em alguns browsers,
+// que o WhatsApp não consegue decodificar, exibindo "?".
+function encodeWA(msg) {
+  var out = "";
+  for (var i = 0; i < msg.length; ) {
+    var cp = msg.codePointAt(i);
+    if (cp > 0xFFFF) {
+      var b1 = 0xF0 | ((cp >> 18) & 0x07);
+      var b2 = 0x80 | ((cp >> 12) & 0x3F);
+      var b3 = 0x80 | ((cp >>  6) & 0x3F);
+      var b4 = 0x80 | ( cp        & 0x3F);
+      out += "%" + b1.toString(16).toUpperCase()
+           + "%" + b2.toString(16).toUpperCase()
+           + "%" + b3.toString(16).toUpperCase()
+           + "%" + b4.toString(16).toUpperCase();
+      i += 2;
+    } else {
+      out += encodeURIComponent(msg[i]);
+      i += 1;
+    }
+  }
+  return out;
+}
+
 // E — Mensagem WhatsApp com emojis via code points
 function buildMessage(data) {
   const entrega = getAddressLine(data);
@@ -337,7 +362,7 @@ orderForm.addEventListener("submit", function (event) {
     return;
   }
   const message = buildMessage(data);
-  const target  = "https://wa.me/" + siteConfig.whatsappNumber + "?text=" + encodeURIComponent(message);
+  const target  = "https://wa.me/" + siteConfig.whatsappNumber + "?text=" + encodeWA(message);
   if (siteConfig.whatsappNumber === siteConfig.placeholderNumber) {
     addToast("O pedido foi montado. Substitua o WhatsApp placeholder para uso real.", "warning", 5200);
   } else {
