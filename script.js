@@ -32,7 +32,11 @@ const cepStatus      = document.querySelector("#cepStatus");
 const addressResult  = document.querySelector("#addressResult");
 const addressStreet  = document.querySelector("#addressStreet");
 const addressNumber  = document.querySelector("#addressNumber");
+const freteResult    = document.querySelector("#freteResult");
 const dateInput      = document.querySelector("#date");
+
+// Taxa de entrega estimada (centavos) do último cálculo; null quando indisponível.
+let freteCentavosAtual = null;
 const siteHeader     = document.querySelector(".site-header");
 const navToggle      = document.querySelector(".nav-toggle");
 const navLinks       = document.querySelectorAll(".nav a");
@@ -61,6 +65,15 @@ function resetAddressFields() {
   addressStreet.value = "";
   addressNumber.value = "";
   addressNumber.required = false;
+  esconderFrete();
+}
+
+function esconderFrete() {
+  freteCentavosAtual = null;
+  if (!freteResult) return;
+  freteResult.style.display = "none";
+  freteResult.textContent = "";
+  freteResult.className = "frete-result";
 }
 
 // C — Formatar CEP e disparar busca ao completar 8 dígitos
@@ -76,9 +89,67 @@ cepInput.addEventListener("input", (event) => {
   addressStreet.value = "";
   cepStatus.textContent = "";
   cepStatus.className = "cep-status";
+  esconderFrete();
   const digits = onlyDigits(event.target.value);
   if (digits.length === 8) buscarCEP(digits);
 });
+
+// JSONP: o Apps Script (doGet) responde com callback(...) — contorna o CORS do GET.
+function jsonp(url, cb) {
+  const name = "__freteCb" + Date.now();
+  const script = document.createElement("script");
+  window[name] = function (data) {
+    delete window[name];
+    script.remove();
+    cb(data);
+  };
+  script.onerror = function () {
+    delete window[name];
+    script.remove();
+    cb(null);
+  };
+  script.src = url + (url.indexOf("?") >= 0 ? "&" : "?") + "callback=" + name;
+  document.body.appendChild(script);
+}
+
+function centavosParaBR(cent) {
+  const v = (cent / 100).toFixed(2).replace(".", ",");
+  return v.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+// Pede a taxa ao backend (Google Distance Matrix roda lá, com a chave escondida).
+function calcularFrete() {
+  if (!siteConfig.appsScriptUrl || !freteResult) return;
+  const rua    = addressStreet.value;
+  const numero = (addressNumber.value || "").trim();
+  if (!rua || !numero) { esconderFrete(); return; }
+
+  // Insere o número logo após o logradouro: "Rua X, 44, Bairro, Cidade/RS".
+  const partes = rua.split(", ");
+  partes.splice(1, 0, numero);
+  const destino = partes.join(", ");
+
+  freteResult.style.display = "";
+  freteResult.className = "frete-result loading";
+  freteResult.textContent = "Calculando taxa de entrega...";
+
+  const url = siteConfig.appsScriptUrl + "?action=frete&destino=" + encodeURIComponent(destino);
+  jsonp(url, function (data) {
+    if (!data || !data.ok) {
+      freteCentavosAtual = null;
+      freteResult.className = "frete-result info";
+      freteResult.textContent = "Taxa de entrega a confirmar pela Adriana.";
+      return;
+    }
+    freteCentavosAtual = data.taxaCentavos;
+    const km = String(data.km).replace(".", ",");
+    freteResult.className = "frete-result ok";
+    freteResult.textContent = "Taxa de entrega estimada: R$ " + centavosParaBR(data.taxaCentavos) + " (" + km + " km)";
+  });
+}
+
+// Recalcula quando o número é preenchido/alterado (blur), evitando 1 chamada por tecla.
+addressNumber.addEventListener("change", calcularFrete);
 
 // Consulta ViaCEP; se falhar ou retornar erro, cai para a BrasilAPI.
 // Devolve { logradouro, bairro, localidade, uf } ou null (CEP inexistente nos dois).
@@ -194,6 +265,12 @@ function getAddressLine(data) {
   return "Entrega em endereço";
 }
 
+// Texto da taxa estimada para anexar ao pedido (só quando há entrega com valor calculado).
+function getFreteTexto(data) {
+  if (data.delivery !== "Entrega em endereço" || freteCentavosAtual == null) return "";
+  return "R$ " + centavosParaBR(freteCentavosAtual) + " (estimada)";
+}
+
 // Salvar pedido no Google Sheets via Apps Script (fire-and-forget)
 function saveOrder(data) {
   if (!siteConfig.appsScriptUrl) return;
@@ -227,6 +304,7 @@ function resetForm() {
 // E — Mensagem WhatsApp com emojis via code points
 function buildMessage(data) {
   const entrega = getAddressLine(data);
+  const frete   = getFreteTexto(data);
   return [
     "Olá, Dolci Dri! " + E.cake + " Quero fazer uma encomenda.",
     "",
@@ -237,12 +315,13 @@ function buildMessage(data) {
     E.num   + " Quantidade:    " + data.quantity,
     E.cal   + " Data desejada: " + formatDateBR(data.date),
     E.box   + " Entrega:       " + entrega,
+    frete ? (E.box + " Taxa entrega:  " + frete) : null,
     "",
     E.memo  + " Detalhes: " + (data.notes || "Sem detalhes adicionais."),
     "",
     "─────────────────────",
     "Pedido via dolcidri.vercel.app"
-  ].join("\n");
+  ].filter(function (l) { return l !== null; }).join("\n");
 }
 
 function buildEmailSubject(data) {
@@ -251,6 +330,7 @@ function buildEmailSubject(data) {
 
 function buildEmailBody(data) {
   const entrega = getAddressLine(data);
+  const frete   = getFreteTexto(data);
   return [
     "Olá!",
     "",
@@ -264,13 +344,14 @@ function buildEmailBody(data) {
     "Quantidade:    " + data.quantity,
     "Data desejada: " + formatDateBR(data.date),
     "Entrega:       " + entrega,
+    frete ? ("Taxa entrega:  " + frete) : null,
     "",
     "Detalhes:",
     data.notes || "Sem detalhes adicionais.",
     "",
     "───────────────────────",
     "Pedido enviado pelo site dolcidri.vercel.app"
-  ].join("\n");
+  ].filter(function (l) { return l !== null; }).join("\n");
 }
 
 function validateDelivery(data) {

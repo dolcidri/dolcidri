@@ -7,8 +7,19 @@
 // 4. Copie a URL gerada e cole em siteConfig.appsScriptUrl (script.js) e em SCRIPT_URL (admin.html)
 //
 // IMPORTANTE: ao atualizar este arquivo, reimplante com "Gerenciar implantações > Editar > Nova versão".
+//
+// FRETE (taxa de entrega): para o cálculo funcionar, cadastre a chave da API Google em
+//   Configurações do projeto (engrenagem) > Propriedades do script > Adicionar:
+//     GOOGLE_MAPS_KEY = <sua chave da Google Distance Matrix API>
+// A chave fica só aqui (servidor) — nunca aparece no site. Sem a chave, o site exibe
+// "Taxa de entrega a confirmar pela Adriana" e o pedido segue normal.
 
 var SHEET_NAME = 'Pedidos';
+
+// Frete — base de saída fixa (Rua Pessegueiro, 44 — Carniel, Gramado/RS).
+var FRETE_ORIGEM      = 'Rua Pessegueiro, 44, Carniel, Gramado, RS, Brasil';
+var FRETE_BASE_CENT   = 700; // taxa de saída: R$ 7,00
+var FRETE_POR_KM_CENT = 150; // R$ 1,50 por km rodado
 
 // Índices base 1 (para getRange). Colunas novas vão sempre ao final (compatível com planilhas antigas).
 var C = {
@@ -79,6 +90,33 @@ function linhaPorId_(sh, id) {
     if (String(rows[i][C.ID - 1]) === String(id)) return i + 1; // linha base 1
   }
   return -1;
+}
+
+// Calcula a taxa de entrega: taxa = BASE + (R$/km x km de estrada), km arredondado
+// pra cima a cada 0,1 km, nunca abaixo da BASE. Distância real via Google Distance Matrix.
+// Devolve { ok, km, taxaCentavos } ou { ok:false, msg } (sem chave / fora de área / erro).
+function calcularFrete_(destino) {
+  if (!destino) return { ok: false, msg: 'SEM_DESTINO' };
+  var key = PropertiesService.getScriptProperties().getProperty('GOOGLE_MAPS_KEY');
+  if (!key) return { ok: false, msg: 'SEM_CHAVE' };
+
+  var url = 'https://maps.googleapis.com/maps/api/distancematrix/json'
+    + '?origins='      + encodeURIComponent(FRETE_ORIGEM)
+    + '&destinations=' + encodeURIComponent(destino)
+    + '&mode=driving&units=metric&language=pt-BR&region=br&key=' + key;
+
+  var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  var data = JSON.parse(resp.getContentText());
+  if (data.status !== 'OK') return { ok: false, msg: data.status };
+
+  var el = data.rows && data.rows[0] && data.rows[0].elements && data.rows[0].elements[0];
+  if (!el || el.status !== 'OK') return { ok: false, msg: el ? el.status : 'SEM_ELEMENTO' };
+
+  var km      = el.distance.value / 1000;       // metros -> km
+  var kmArred = Math.ceil(km * 10) / 10;        // arredonda pra cima a cada 0,1 km
+  var taxa    = FRETE_BASE_CENT + Math.round(FRETE_POR_KM_CENT * kmArred);
+  if (taxa < FRETE_BASE_CENT) taxa = FRETE_BASE_CENT; // mínimo = a própria base
+  return { ok: true, km: kmArred, taxaCentavos: taxa };
 }
 
 function doPost(e) {
@@ -180,6 +218,9 @@ function doGet(e) {
     }
     pedidos.reverse(); // mais recente primeiro
     result = { pedidos: pedidos };
+
+  } else if (action === 'frete') {
+    result = calcularFrete_(e.parameter.destino);
   }
 
   var json = JSON.stringify(result);
