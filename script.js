@@ -1,16 +1,36 @@
 const siteConfig = {
   whatsappNumber: "5554994047528",
   placeholderNumber: "5500000000000",
-  email: "dolcidri@gmail.com"
+  email: "dolcidri@gmail.com",
+  minDaysAhead: 3
 };
 
 const toastArea = document.querySelector("#toastArea");
 const orderForm = document.querySelector("#orderForm");
 const phoneInput = document.querySelector("#phone");
 const productSelect = document.querySelector("#product");
+const deliverySelect = document.querySelector("#delivery");
+const addressField = document.querySelector("#addressField");
+const addressInput = document.querySelector("#address");
+const dateInput = document.querySelector("#date");
 const siteHeader = document.querySelector(".site-header");
 const navToggle = document.querySelector(".nav-toggle");
 const navLinks = document.querySelectorAll(".nav a");
+
+// A — Data mínima: hoje + 3 dias
+(function setMinDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + siteConfig.minDaysAhead);
+  dateInput.min = d.toISOString().slice(0, 10);
+})();
+
+// C — Mostrar/ocultar campo de endereço conforme escolha de entrega
+deliverySelect.addEventListener("change", () => {
+  const isDelivery = deliverySelect.value === "Entrega em endereço";
+  addressField.style.display = isDelivery ? "" : "none";
+  addressInput.required = isDelivery;
+  if (!isDelivery) addressInput.value = "";
+});
 
 function addToast(message, type = "info", duration = 3600) {
   const toast = document.createElement("div");
@@ -47,11 +67,55 @@ function formatDateBR(value) {
   return `${day}/${month}/${year}`;
 }
 
+// D — Telefone válido: mínimo 10 dígitos
+function validatePhone(phone) {
+  return onlyDigits(phone).length >= 10;
+}
+
+function collectFormData() {
+  return Object.fromEntries(new FormData(orderForm).entries());
+}
+
+// B — Limpar formulário após envio
+function resetForm() {
+  orderForm.reset();
+  addressField.style.display = "none";
+  addressInput.required = false;
+}
+
+// E — Mensagem WhatsApp com formatação rica
+function buildMessage(data) {
+  const entrega = data.delivery === "Entrega em endereço" && data.address
+    ? `Entrega em: ${data.address}`
+    : data.delivery || "Não informado";
+
+  return [
+    "Olá, Dolci Dri! 🍰 Quero fazer uma encomenda.",
+    "",
+    "📋 *DADOS DO PEDIDO*",
+    `👤 Nome: ${data.name}`,
+    `📱 Telefone: ${data.phone}`,
+    `🎂 Produto: ${data.product}`,
+    `🔢 Quantidade: ${data.quantity}`,
+    `📅 Data desejada: ${formatDateBR(data.date)}`,
+    `📦 ${entrega}`,
+    "",
+    `📝 Detalhes: ${data.notes || "Sem detalhes adicionais."}`,
+    "",
+    "─────────────────────",
+    "Pedido via dolcidri.vercel.app"
+  ].join("\n");
+}
+
 function buildEmailSubject(data) {
   return `Encomenda — ${data.product} | Dolci Dri`;
 }
 
 function buildEmailBody(data) {
+  const entrega = data.delivery === "Entrega em endereço" && data.address
+    ? `Entrega em: ${data.address}`
+    : data.delivery || "Não informado";
+
   return [
     "Olá!",
     "",
@@ -64,25 +128,13 @@ function buildEmailBody(data) {
     `Produto:       ${data.product}`,
     `Quantidade:    ${data.quantity}`,
     `Data desejada: ${formatDateBR(data.date)}`,
+    `Entrega:       ${entrega}`,
     "",
     "Detalhes:",
     data.notes || "Sem detalhes adicionais.",
     "",
     "───────────────────────",
-    "Pedido enviado pelo site Dolci Dri."
-  ].join("\n");
-}
-
-function buildMessage(data) {
-  return [
-    "Olá, Dolci Dri! Quero fazer uma encomenda.",
-    "",
-    `Nome: ${data.name}`,
-    `Telefone: ${data.phone}`,
-    `Produto: ${data.product}`,
-    `Quantidade: ${data.quantity}`,
-    `Data desejada: ${formatDateBR(data.date)}`,
-    `Detalhes: ${data.notes || "Sem detalhes adicionais."}`
+    "Pedido enviado pelo site dolcidri.vercel.app"
   ].join("\n");
 }
 
@@ -112,22 +164,28 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+const nameInput = document.querySelector("#name");
 const emailBtn = document.querySelector("#emailBtn");
 
 emailBtn.addEventListener("click", () => {
-  const name = document.querySelector("#name").value.trim();
-  const phone = document.querySelector("#phone").value.trim();
-  const product = document.querySelector("#product").value;
-  const quantity = document.querySelector("#quantity").value.trim();
-  const date = document.querySelector("#date").value;
+  const data = collectFormData();
 
-  if (!name || !phone || !product || !quantity || !date) {
+  if (!data.name || !data.phone || !data.product || !data.quantity || !data.date || !data.delivery) {
     addToast("Preencha todos os campos obrigatórios antes de enviar.", "warning");
     return;
   }
 
-  const formData = new FormData(orderForm);
-  const data = Object.fromEntries(formData.entries());
+  if (!validatePhone(data.phone)) {
+    addToast("Informe um telefone válido (mínimo 10 dígitos).", "warning");
+    phoneInput.focus();
+    return;
+  }
+
+  if (data.delivery === "Entrega em endereço" && !data.address?.trim()) {
+    addToast("Informe o endereço de entrega.", "warning");
+    addressInput.focus();
+    return;
+  }
 
   const subject = buildEmailSubject(data);
   const body = buildEmailBody(data);
@@ -135,9 +193,8 @@ emailBtn.addEventListener("click", () => {
 
   window.open(gmailUrl, "_blank", "noopener,noreferrer");
   addToast("Abrindo Gmail com o pedido.", "info");
+  resetForm();
 });
-
-const nameInput = document.querySelector("#name");
 
 document.querySelectorAll("[data-product]").forEach((link) => {
   link.addEventListener("click", () => {
@@ -150,12 +207,17 @@ document.querySelectorAll("[data-product]").forEach((link) => {
 
 orderForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  const formData = new FormData(orderForm);
-  const data = Object.fromEntries(formData.entries());
+  const data = collectFormData();
 
-  if (!onlyDigits(data.phone).length) {
-    addToast("Informe um telefone válido para retorno.", "warning");
+  if (!validatePhone(data.phone)) {
+    addToast("Informe um telefone válido (mínimo 10 dígitos).", "warning");
     phoneInput.focus();
+    return;
+  }
+
+  if (data.delivery === "Entrega em endereço" && !data.address?.trim()) {
+    addToast("Informe o endereço de entrega.", "warning");
+    addressInput.focus();
     return;
   }
 
@@ -165,8 +227,9 @@ orderForm.addEventListener("submit", (event) => {
   if (siteConfig.whatsappNumber === siteConfig.placeholderNumber) {
     addToast("O pedido foi montado. Substitua o WhatsApp placeholder para uso real.", "warning", 5200);
   } else {
-    addToast("Pedido pronto para envio pelo WhatsApp.", "success");
+    addToast("Pedido enviado para o WhatsApp!", "success");
   }
 
   window.open(target, "_blank", "noopener,noreferrer");
+  resetForm();
 });

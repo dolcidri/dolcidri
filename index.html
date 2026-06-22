@@ -282,6 +282,18 @@
             </div>
           </div>
           <div class="field">
+            <label for="delivery">Retirada ou Entrega?</label>
+            <select id="delivery" name="delivery" required>
+              <option value="">Selecione</option>
+              <option value="Retirada no local">Retirada no local (Rua Pessegueiro, 44 — Gramado)</option>
+              <option value="Entrega em endereço">Entrega em endereço</option>
+            </select>
+          </div>
+          <div class="field" id="addressField" style="display:none">
+            <label for="address">Endereço de entrega</label>
+            <input id="address" name="address" placeholder="Rua, número, bairro, cidade" autocomplete="street-address">
+          </div>
+          <div class="field">
             <label for="notes">Detalhes do pedido</label>
             <textarea
               id="notes"
