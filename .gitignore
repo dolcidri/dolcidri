@@ -9,6 +9,7 @@ assets/bolo-copa-original.jpg
 assets/products/*-ilustrativo.jpg
 assets/products/video mesa.mp4
 
-# Salvaguarda — pastas sigilosas da raiz Adriana (nunca publicar)
+# Salvaguarda — pasta sigilosa da raiz Adriana (nunca publicar)
+# Nota: Docs/ foi removido pois a pasta Adriana\Docs\ fica FORA do repo
+# e .gitignore só afeta caminhos dentro da árvore do repo.
 Documentos/
-Docs/
