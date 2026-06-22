@@ -32,9 +32,14 @@ Toda troca que **sai de** um estado já processado (`Confirmado`, `Atendido` ou 
 
 ## Valor do orçamento
 
-- Definido pela Adriana ao **confirmar** o pedido (botão "Confirmar pedido") ou via "Editar valor" num pedido já confirmado.
+- Definido pela Adriana ao **confirmar** o pedido (botão "Confirmar pedido") ou via "Editar" num pedido já confirmado.
 - Input estilo **calculadora**: dígitos entram pela direita (`1` → `0,01`, `123456` → `1.234,56`).
 - Armazenado sempre em **centavos** (inteiro) na planilha; a formatação `R$ 1.234,56` (pt-BR) é só na UI.
+
+### Data de entrega editável
+
+- O modal "Confirmar pedido" / "Editar" tem um `<input type="date">` pré-preenchido com a data atual; a Adriana pode ajustar antes de confirmar.
+- Convertida de/para `YYYY-MM-DD` (`paraInputDate` / `inputDateParaBR`) e gravada na planilha no padrão `DD/MM/AAAA`. Persistida pelas ações `atualizarStatus` e `definirValor` (campo `data`).
 
 ## Número do pedido
 

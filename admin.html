@@ -315,14 +315,23 @@
     .money-wrap {
       display:flex; align-items:center; gap:10px;
       border:1.8px solid #dac9b0; border-radius:14px;
-      padding: 0 18px; min-height: 64px; background:#fdfbf7;
+      padding: 0 16px; min-height: 64px; background:#fdfbf7;
+      overflow: hidden;
     }
     .money-wrap:focus-within { border-color:var(--gold); box-shadow:0 0 0 4px rgba(232,179,92,.25); }
-    .money-wrap .rs { font-weight:800; color:var(--muted); font-size:1.15rem; }
+    .money-wrap .rs { font-weight:800; color:var(--muted); font-size:1.1rem; flex-shrink:0; }
     .money-wrap input {
-      flex:1; border:0; outline:0; background:transparent;
-      font: inherit; font-size:1.7rem; font-weight:800; text-align:right; color:var(--ink);
+      flex:1; min-width:0; width:100%;
+      border:0; outline:0; background:transparent;
+      font: inherit; font-size:1.5rem; font-weight:800; text-align:right; color:var(--ink);
     }
+    .field-data { margin-bottom: 16px; }
+    .field-data input[type="date"] {
+      width:100%; min-height:54px; padding:0 16px;
+      border:1.6px solid #dac9b0; border-radius:12px; background:#fdfbf7;
+      font: inherit; font-size:1.05rem; font-weight:700; color:var(--ink);
+    }
+    .field-data input[type="date"]:focus { outline:0; border-color:var(--gold); box-shadow:0 0 0 4px rgba(232,179,92,.25); }
     .modal-foot {
       flex-shrink: 0; display: flex; gap: 10px;
       padding: 14px 22px calc(16px + env(safe-area-inset-bottom));
@@ -484,6 +493,22 @@
     return v; // já em DD/MM/AAAA ou texto livre
   }
 
+  // DD/MM/AAAA ou ISO → YYYY-MM-DD (para <input type="date">).
+  function paraInputDate(v) {
+    if (!v) return '';
+    v = String(v);
+    var iso = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return iso[1] + '-' + iso[2] + '-' + iso[3];
+    var br = v.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (br) return br[3] + '-' + br[2] + '-' + br[1];
+    return '';
+  }
+  // YYYY-MM-DD → DD/MM/AAAA (para gravar no padrão da planilha).
+  function inputDateParaBR(v) {
+    var m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? m[3] + '/' + m[2] + '/' + m[1] : '';
+  }
+
   // Datetime (enviado/confirmado/atendido) → DD/MM/AAAA HH:MM em America/Belem (UTC-3).
   function dataHora(v) {
     if (!v) return '';
@@ -631,7 +656,7 @@
     if (status === 'Confirmado') {
       return '<div class="card-acoes">'
         + '<button class="btn-green" onclick="pedirConfirmacao(' + id + ', \'Atendido\')">✓ Entregue</button>'
-        + '<button class="btn-ghost" onclick="abrirValor(' + id + ', true)">Editar valor</button>'
+        + '<button class="btn-ghost" onclick="abrirValor(' + id + ', true)">Editar</button>'
         + '<button class="btn-cancel" onclick="pedirConfirmacao(' + id + ', \'Cancelado\')">Cancelar</button>'
         + '</div>';
     }
@@ -765,12 +790,15 @@
     var inicial = (editando && p.valor !== '' && p.valor != null) ? parseInt(p.valor, 10) || 0 : 0;
 
     abrirModal(
-      '<div class="modal-head"><div class="mh-num">Pedido ' + esc(num) + '</div><h2>' + (editando ? 'Editar valor' : 'Confirmar pedido') + '</h2></div>'
+      '<div class="modal-head"><div class="mh-num">Pedido ' + esc(num) + '</div><h2>' + (editando ? 'Editar pedido' : 'Confirmar pedido') + '</h2></div>'
       + '<div class="modal-body">'
         + '<div class="modal-resumo">'
           + '<div class="mr-row"><span class="mr-label">Cliente</span><span class="mr-value">' + esc(p.nome) + '</span></div>'
           + '<div class="mr-row"><span class="mr-label">Produto</span><span class="mr-value">' + esc(p.produto) + ' — ' + esc(p.quantidade) + '</span></div>'
-          + '<div class="mr-row"><span class="mr-label">Entrega em</span><span class="mr-value">' + esc(soData(p.data)) + '</span></div>'
+        + '</div>'
+        + '<div class="field-data">'
+          + '<div class="money-label">Data de entrega</div>'
+          + '<input type="date" id="dataInput" value="' + esc(paraInputDate(p.data)) + '">'
         + '</div>'
         + '<div class="money-label">Valor do orçamento</div>'
         + '<div class="money-wrap"><span class="rs">R$</span><input id="valorInput" inputmode="numeric" autocomplete="off" placeholder="0,00"></div>'
@@ -778,7 +806,7 @@
       + '</div>'
       + '<div class="modal-foot">'
         + '<button class="mf-cancel" id="mCancel">Voltar</button>'
-        + '<button class="mf-ok-gold" id="mOk">' + (editando ? 'Salvar valor' : 'Confirmar pedido') + '</button>'
+        + '<button class="mf-ok-gold" id="mOk">' + (editando ? 'Salvar' : 'Confirmar pedido') + '</button>'
       + '</div>'
     );
 
@@ -795,15 +823,18 @@
 
     el('mCancel').onclick = fecharModal;
     el('mOk').onclick = function () {
+      var dataInput = el('dataInput').value;
+      if (!dataInput) { toast('Informe a data de entrega.', 'warning'); el('dataInput').focus(); return; }
       if (centavos <= 0) { toast('Informe o valor do orçamento.', 'warning'); input.focus(); return; }
+      var dataBR = inputDateParaBR(dataInput);
       fecharModal();
-      if (editando) definirValor(id, centavos);
-      else executarMudanca(id, 'Confirmado', centavos);
+      if (editando) definirValor(id, centavos, dataBR);
+      else executarMudanca(id, 'Confirmado', centavos, dataBR);
     };
   }
 
   // ── Executar troca de status (otimista + POST) ─────────────────
-  function executarMudanca(id, novoStatus, valorCentavos) {
+  function executarMudanca(id, novoStatus, valorCentavos, dataBR) {
     var p = getPedido(id);
     if (!p) return;
     var agora = horaAgora();
@@ -812,6 +843,7 @@
     if (novoStatus === 'Confirmado') {
       p.confirmadoEm = agora; p.atendidoEm = ''; p.canceladoEm = '';
       if (valorCentavos != null) p.valor = valorCentavos;
+      if (dataBR) p.data = dataBR;
     } else if (novoStatus === 'Atendido') {
       p.atendidoEm = agora; p.canceladoEm = '';
     } else if (novoStatus === 'Cancelado') {
@@ -834,21 +866,23 @@
     if (!SCRIPT_URL) return;
     var body = { action: 'atualizarStatus', id: id, status: novoStatus };
     if (valorCentavos != null) body.valor = valorCentavos;
+    if (dataBR) body.data = dataBR;
     fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(body) })
       .catch(function () { toast('Falha ao salvar no servidor. Atualize para conferir.', 'error', 5000); });
   }
 
-  function definirValor(id, valorCentavos) {
+  function definirValor(id, valorCentavos, dataBR) {
     var p = getPedido(id);
     if (!p) return;
     p.valor = valorCentavos;
+    if (dataBR) p.data = dataBR;
     renderizarFiltro();
-    toast('Valor atualizado: ' + fmtReais(valorCentavos) + '.', 'success');
+    toast('Pedido ' + numeroPedido(p) + ' atualizado.', 'success');
     if (!SCRIPT_URL) return;
-    fetch(SCRIPT_URL, {
-      method: 'POST', mode: 'no-cors',
-      body: JSON.stringify({ action: 'definirValor', id: id, valor: valorCentavos })
-    }).catch(function () { toast('Falha ao salvar o valor.', 'error'); });
+    var body = { action: 'definirValor', id: id, valor: valorCentavos };
+    if (dataBR) body.data = dataBR;
+    fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(body) })
+      .catch(function () { toast('Falha ao salvar.', 'error'); });
   }
 
   // ── Init ──────────────────────────────────────────────────────

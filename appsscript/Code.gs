@@ -101,6 +101,7 @@ function doPost(e) {
         var st  = data.status;
         var now = agoraBR_();
         sh.getRange(r, C.STATUS).setValue(st);
+        if (data.data) sh.getRange(r, C.DATA).setValue(data.data);
 
         if (st === 'Confirmado') {
           sh.getRange(r, C.CONFIRMADO_EM).setValue(now);
@@ -125,7 +126,10 @@ function doPost(e) {
 
     } else if (data.action === 'definirValor') {
       var rv = linhaPorId_(sh, data.id);
-      if (rv > 0) sh.getRange(rv, C.VALOR).setValue(data.valor || '');
+      if (rv > 0) {
+        sh.getRange(rv, C.VALOR).setValue(data.valor || '');
+        if (data.data) sh.getRange(rv, C.DATA).setValue(data.data);
+      }
     }
 
     return ContentService.createTextOutput('ok')
