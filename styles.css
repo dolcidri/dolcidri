@@ -527,6 +527,42 @@ textarea:focus {
   font-size: 0.9rem;
 }
 
+.field-hint {
+  font-weight: 400;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.cep-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cep-row input {
+  flex: 0 0 auto;
+  width: 148px;
+}
+
+.cep-status {
+  font-size: 0.88rem;
+}
+
+.cep-status.loading { color: var(--muted); }
+.cep-status.ok      { color: var(--green); font-weight: 700; }
+.cep-status.error   { color: #b42a2a;      font-weight: 700; }
+
+#addressResult {
+  display: grid;
+  gap: 0;
+}
+
+.address-street {
+  background: #f0e8dd;
+  color: var(--muted);
+  cursor: default;
+}
+
 code {
   color: var(--navy);
   font-weight: 800;

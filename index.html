@@ -289,9 +289,23 @@
               <option value="Entrega em endereço">Entrega em endereço</option>
             </select>
           </div>
-          <div class="field" id="addressField" style="display:none">
-            <label for="address">Endereço de entrega</label>
-            <input id="address" name="address" placeholder="Rua, número, bairro, cidade" autocomplete="street-address">
+          <div id="addressField" style="display:none">
+            <div class="field">
+              <label for="cep">CEP de entrega <span class="field-hint">— Gramado e Canela/RS</span></label>
+              <div class="cep-row">
+                <input id="cep" name="cep" inputmode="numeric" placeholder="00000-000" maxlength="9" autocomplete="postal-code">
+                <span id="cepStatus" class="cep-status" aria-live="polite"></span>
+              </div>
+            </div>
+            <div id="addressResult" style="display:none">
+              <div class="field">
+                <input id="addressStreet" name="addressStreet" class="address-street" readonly tabindex="-1" placeholder="Rua, bairro e cidade (preenchido pelo CEP)">
+              </div>
+              <div class="field">
+                <label for="addressNumber">Número e complemento</label>
+                <input id="addressNumber" name="addressNumber" placeholder="Ex.: 44, Apto 2" autocomplete="address-line2">
+              </div>
+            </div>
           </div>
           <div class="field">
             <label for="notes">Detalhes do pedido</label>
