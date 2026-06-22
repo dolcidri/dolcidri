@@ -8,3 +8,7 @@ __pycache__/
 assets/bolo-copa-original.jpg
 assets/products/*-ilustrativo.jpg
 assets/products/video mesa.mp4
+
+# Salvaguarda — pastas sigilosas da raiz Adriana (nunca publicar)
+Documentos/
+Docs/
