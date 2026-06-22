@@ -3,16 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#253e5d">
   <title>Admin — Dolci Dri</title>
   <style>
+    :root {
+      --navy:#253e5d; --navy-d:#162540; --cream:#e6d4bc; --paper:#f5ead8;
+      --gold:#e8b35c; --gold-d:#d9a44c; --green:#007047; --green-l:#16a06a;
+      --red:#b42a2a; --blue:#1b4f8a; --blue-l:#3b82c4;
+      --ink:#162438; --muted:#5e6e82; --line:#e6d4bc;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: Arial, Helvetica, sans-serif;
-      background: #f5ead8;
-      color: #162438;
+      font-family: -apple-system, "Segoe UI", Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(1200px 500px at 50% -200px, #fff6e6 0%, transparent 60%),
+        var(--paper);
+      color: var(--ink);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
 
     /* ── GATE ── */
@@ -23,106 +34,137 @@
       justify-content: center;
       min-height: 100vh;
       padding: 32px 24px;
-      gap: 18px;
+      gap: 16px;
     }
-    #gate img { width: 160px; }
-    #gate h1 { font-size: 1.3rem; color: #253e5d; text-align: center; }
-    #gate .sub { font-size: 0.9rem; color: #5e6e82; text-align: center; }
+    #gate .gate-card {
+      width: min(360px, 100%);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 34px 26px 30px;
+      box-shadow: 0 18px 50px rgba(22,37,64,.14);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    #gate img { width: 130px; }
+    #gate h1 { font-size: 1.25rem; color: var(--navy); text-align: center; letter-spacing: -.01em; }
+    #gate .sub { font-size: .9rem; color: var(--muted); text-align: center; margin-top: -6px; }
     #gate input {
-      width: min(320px, 100%);
+      width: 100%;
       min-height: 54px;
       padding: 0 20px;
       border: 1.5px solid #dac9b0;
-      border-radius: 10px;
+      border-radius: 12px;
       font: inherit;
       font-size: 1.15rem;
       text-align: center;
       letter-spacing: 0.12em;
-      background: #fff;
-      color: #162438;
+      background: #fdfbf7;
+      color: var(--ink);
     }
-    #gate input:focus { outline: 3px solid rgba(232,179,92,.4); border-color: #e8b35c; }
+    #gate input:focus { outline: 0; border-color: var(--gold); box-shadow: 0 0 0 4px rgba(232,179,92,.28); }
     #gate .btn-entrar {
-      width: min(320px, 100%);
+      width: 100%;
       min-height: 54px;
-      background: #e8b35c;
-      color: #162540;
+      background: linear-gradient(180deg, var(--gold), var(--gold-d));
+      color: var(--navy-d);
       border: 0;
-      border-radius: 10px;
+      border-radius: 12px;
       font: inherit;
       font-size: 1.05rem;
       font-weight: 800;
       cursor: pointer;
+      transition: filter 120ms, transform 80ms;
     }
-    #gate .btn-entrar:hover { background: #d9a44c; }
-    #gate-erro { color: #b42a2a; font-size: 0.9rem; min-height: 1.2em; }
+    #gate .btn-entrar:hover { filter: brightness(1.04); }
+    #gate .btn-entrar:active { transform: translateY(1px); }
+    #gate-erro { color: var(--red); font-size: 0.9rem; min-height: 1.2em; font-weight: 600; }
 
     /* ── DASHBOARD ── */
-    #dashboard { display: none; max-width: 680px; margin: 0 auto; padding: 0 16px 64px; }
+    #dashboard { display: none; max-width: 700px; margin: 0 auto; padding: 0 16px 64px; }
 
-    /* Header */
     .adm-header {
       display: flex;
       align-items: center;
       gap: 14px;
-      padding: 20px 0 18px;
-      border-bottom: 2px solid #e6d4bc;
-      margin-bottom: 20px;
+      padding: 22px 0 18px;
     }
-    .adm-header img { width: 88px; flex-shrink: 0; }
-    .adm-header-info { flex: 1; }
-    .adm-header-info h1 { font-size: 1.2rem; color: #253e5d; font-weight: 800; }
-    #adm-contador { margin-top: 3px; font-size: 0.88rem; font-weight: 700; color: #007047; min-height: 1.2em; }
+    .adm-header img { width: 64px; flex-shrink: 0; border-radius: 14px; }
+    .adm-header-info { flex: 1; min-width: 0; }
+    .adm-header-info h1 { font-size: 1.3rem; color: var(--navy); font-weight: 800; letter-spacing: -.02em; }
+    #adm-contador { margin-top: 3px; font-size: 0.86rem; font-weight: 700; color: var(--green); min-height: 1.2em; }
     .btn-atualizar {
       flex-shrink: 0;
-      min-height: 42px;
+      min-height: 44px;
       padding: 0 16px;
-      background: #253e5d;
+      background: var(--navy);
       color: #fff;
       border: 0;
-      border-radius: 8px;
+      border-radius: 10px;
       font: inherit;
       font-size: 0.9rem;
       font-weight: 700;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 120ms;
     }
-    .btn-atualizar:hover { background: #162540; }
+    .btn-atualizar:hover { background: var(--navy-d); }
+    .btn-atualizar.girando .ico { animation: spin .7s linear infinite; display:inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Filtros */
+    /* Filtros (sticky) */
+    #filtros-wrap {
+      position: sticky; top: 0; z-index: 50;
+      background: linear-gradient(180deg, var(--paper) 70%, rgba(245,234,216,0));
+      padding: 6px 0 14px;
+      margin-bottom: 6px;
+    }
     #filtros {
       display: flex;
       gap: 8px;
-      margin-bottom: 20px;
       overflow-x: auto;
-      padding-bottom: 4px;
+      padding-bottom: 2px;
       scrollbar-width: none;
     }
     #filtros::-webkit-scrollbar { display: none; }
     #filtros button {
       min-height: 40px;
-      padding: 0 18px;
-      border: 2px solid #253e5d;
+      padding: 0 16px;
+      border: 1.5px solid #cdb79a;
       border-radius: 999px;
-      background: transparent;
-      color: #253e5d;
+      background: #fff;
+      color: var(--navy);
       font: inherit;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
-      transition: background 120ms, color 120ms;
+      transition: background 120ms, color 120ms, border-color 120ms;
+      display: inline-flex; align-items: center; gap: 7px;
     }
-    #filtros button.ativo { background: #253e5d; color: #fff; }
+    #filtros button .pill {
+      background: #efe3cf; color: var(--navy); border-radius: 999px;
+      font-size: .72rem; font-weight: 800; padding: 1px 7px; min-width: 18px; text-align: center;
+    }
+    #filtros button.ativo { background: var(--navy); color: #fff; border-color: var(--navy); }
+    #filtros button.ativo .pill { background: rgba(255,255,255,.22); color: #fff; }
 
     /* Cards */
     .card {
       background: #fff;
-      border: 1px solid #e6d4bc;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 18px rgba(22,37,64,.07);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px 18px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 6px 22px rgba(22,37,64,.07);
+      animation: rise .22s ease both;
     }
+    @keyframes rise { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform:none; } }
+
     .card-top {
       display: flex;
       justify-content: space-between;
@@ -130,93 +172,204 @@
       gap: 12px;
       margin-bottom: 14px;
     }
-    .card-nome { font-size: 1.1rem; font-weight: 800; color: #162540; }
-    .card-produto { font-size: 0.9rem; color: #5e6e82; margin-top: 3px; }
+    .card-id-line { display:flex; align-items:center; gap:8px; margin-bottom: 4px; }
+    .card-num {
+      font-size: .78rem; font-weight: 800; color: var(--navy);
+      background: #f1e7d6; border: 1px solid #e3d4ba;
+      padding: 2px 9px; border-radius: 8px; letter-spacing: .02em;
+    }
+    .card-nome { font-size: 1.12rem; font-weight: 800; color: var(--navy-d); letter-spacing: -.01em; }
+    .card-produto { font-size: 0.9rem; color: var(--muted); margin-top: 2px; }
 
     .badge {
       display: inline-flex;
       align-items: center;
-      padding: 5px 13px;
+      gap: 6px;
+      padding: 6px 12px;
       border-radius: 999px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 800;
       white-space: nowrap;
       flex-shrink: 0;
     }
-    .badge-Pendente  { background: #fef0d6; color: #7a5135; }
-    .badge-Atendido  { background: #e0f5ec; color: #007047; }
-    .badge-Cancelado { background: #f0ede9; color: #5e6e82; }
+    .badge .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .badge-Pendente  { background:#fdeccb; color:#8a5a28; }
+    .badge-Pendente .dot  { background:#e8b35c; }
+    .badge-Confirmado{ background:#e3eefb; color:#1b4f8a; }
+    .badge-Confirmado .dot{ background:#3b82c4; }
+    .badge-Atendido  { background:#def3e9; color:#00673f; }
+    .badge-Atendido .dot  { background:#16a06a; }
+    .badge-Cancelado { background:#efece8; color:#6b7280; }
+    .badge-Cancelado .dot { background:#9aa3ad; }
+
+    /* Bloco de destaque (valor + entrega) para Confirmado/Atendido */
+    .card-destaque {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      background: linear-gradient(135deg,#eef4fb,#e2edfb);
+      border: 1px solid #cdddf0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .card-destaque.ok { background: linear-gradient(135deg,#e9f7ef,#ddf2e8); border-color:#c2e6d3; }
+    .cd-item .cd-label {
+      font-size: .68rem; text-transform: uppercase; letter-spacing: .05em;
+      color: var(--muted); font-weight: 800;
+    }
+    .cd-item .cd-value { font-size: 1.06rem; font-weight: 800; color: var(--blue); margin-top: 3px; }
+    .card-destaque.ok .cd-value { color: var(--green); }
 
     .card-info { display: grid; gap: 7px; font-size: 0.9rem; margin-bottom: 14px; }
     .info-row { display: flex; gap: 10px; align-items: baseline; }
-    .info-label { color: #5e6e82; font-weight: 700; min-width: 80px; flex-shrink: 0; }
-    .info-value { color: #162438; word-break: break-word; }
-    .info-value a { color: #253e5d; font-weight: 700; }
+    .info-label { color: var(--muted); font-weight: 700; min-width: 82px; flex-shrink: 0; }
+    .info-value { color: var(--ink); word-break: break-word; }
+    .info-value a { color: var(--navy); font-weight: 700; text-decoration: none; }
+    .info-value a:hover { text-decoration: underline; }
+    .info-value .wa { display:inline-flex; align-items:center; gap:5px; }
 
-    .card-atendido-em {
-      font-size: 0.82rem;
-      color: #007047;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
+    .card-meta { font-size: .8rem; color: var(--muted); margin-bottom: 12px; }
+    .card-meta b { color: var(--ink); font-weight: 700; }
 
     .card-acoes { display: flex; gap: 8px; }
     .card-acoes button {
       flex: 1;
       min-height: 48px;
-      border-radius: 8px;
-      border: 2px solid;
+      border-radius: 10px;
+      border: 1.8px solid transparent;
       font: inherit;
-      font-size: 0.85rem;
+      font-size: 0.86rem;
       font-weight: 800;
       cursor: pointer;
-      transition: background 120ms, color 120ms;
+      transition: background 120ms, color 120ms, transform 80ms;
+      display:inline-flex; align-items:center; justify-content:center; gap:6px;
     }
-    .btn-p              { border-color: #c49a40; color: #7a5135; background: transparent; }
-    .btn-p.sel          { background: #e8b35c; color: #162540; border-color: #e8b35c; }
-    .btn-a              { border-color: #007047; color: #007047; background: transparent; }
-    .btn-a.sel          { background: #007047; color: #fff; }
-    .btn-c              { border-color: #b42a2a; color: #b42a2a; background: transparent; }
-    .btn-c.sel          { background: #b42a2a; color: #fff; }
+    .card-acoes button:active { transform: translateY(1px); }
+    .btn-gold  { background: linear-gradient(180deg,var(--gold),var(--gold-d)); color: var(--navy-d); }
+    .btn-green { background: var(--green); color:#fff; }
+    .btn-green:hover { background:#005c3a; }
+    .btn-cancel{ background: #fff; color: var(--red); border-color: #e7b9b9; }
+    .btn-cancel:hover { background:#fbeeee; }
+    .btn-ghost { background: #f6f1e8; color: var(--navy); border-color:#e3d8c4; }
+    .btn-ghost:hover { background:#efe7d8; }
 
     /* Estados */
-    #loading {
+    #loading, #vazio {
       text-align: center;
-      padding: 48px 24px;
-      color: #5e6e82;
+      padding: 52px 24px;
+      color: var(--muted);
       font-size: 0.95rem;
     }
-    #vazio {
-      display: none;
-      text-align: center;
-      padding: 48px 24px;
-      color: #5e6e82;
-      font-size: 0.95rem;
-    }
+    #vazio { display: none; }
+    #vazio .emoji { font-size: 2.2rem; display:block; margin-bottom: 10px; }
     .sem-url { line-height: 1.7; }
     .sem-url code {
-      font-family: monospace;
-      background: #f0e8dd;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.92rem;
+      font-family: monospace; background: #f0e8dd;
+      padding: 2px 6px; border-radius: 4px; font-size: 0.92rem;
     }
 
-    /* Rodapé */
-    .adm-footer { text-align: center; padding: 28px 0; }
+    .adm-footer { text-align: center; padding: 30px 0 8px; }
     .btn-sair {
-      background: transparent;
-      border: 0;
-      color: #5e6e82;
-      font: inherit;
-      font-size: 0.88rem;
-      cursor: pointer;
-      text-decoration: underline;
+      background: transparent; border: 0; color: var(--muted);
+      font: inherit; font-size: 0.88rem; cursor: pointer; text-decoration: underline;
     }
 
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(22,37,64,.55);
+      -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+      display: none; align-items: flex-end; justify-content: center;
+      padding: 0;
+    }
+    .modal-overlay.show { display: flex; animation: fade .15s ease both; }
+    @keyframes fade { from { opacity:0; } to { opacity:1; } }
+    .modal-box {
+      background: #fff;
+      width: 100%; max-width: 460px; max-height: 90vh;
+      display: flex; flex-direction: column;
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -10px 50px rgba(22,37,64,.3);
+      animation: slideUp .22s cubic-bezier(.2,.8,.2,1) both;
+      overflow: hidden;
+    }
+    @keyframes slideUp { from { transform: translateY(28px); } to { transform:none; } }
+    .modal-head {
+      flex-shrink: 0; padding: 20px 22px 14px;
+      border-bottom: 1px solid #f0ece4;
+    }
+    .modal-head h2 { font-size: 1.12rem; color: var(--navy-d); font-weight: 800; }
+    .modal-head .mh-num { font-size: .8rem; color: var(--muted); font-weight: 700; margin-bottom: 3px; }
+    .modal-body { flex: 1; overflow-y: auto; padding: 18px 22px; }
+    .modal-body p { font-size: .95rem; line-height: 1.55; color: var(--ink); }
+    .modal-body .mb-sub { color: var(--muted); font-size: .88rem; margin-top: 8px; }
+    .modal-resumo {
+      background: #f8f4ec; border:1px solid #ece2d0; border-radius: 12px;
+      padding: 12px 14px; margin: 4px 0 18px; font-size: .9rem;
+    }
+    .modal-resumo .mr-row { display:flex; justify-content:space-between; gap:10px; padding: 3px 0; }
+    .modal-resumo .mr-label { color: var(--muted); font-weight:700; }
+    .modal-resumo .mr-value { color: var(--ink); font-weight:700; text-align:right; }
+    .money-label { font-size:.82rem; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom: 8px; }
+    .money-wrap {
+      display:flex; align-items:center; gap:10px;
+      border:1.8px solid #dac9b0; border-radius:14px;
+      padding: 0 18px; min-height: 64px; background:#fdfbf7;
+    }
+    .money-wrap:focus-within { border-color:var(--gold); box-shadow:0 0 0 4px rgba(232,179,92,.25); }
+    .money-wrap .rs { font-weight:800; color:var(--muted); font-size:1.15rem; }
+    .money-wrap input {
+      flex:1; border:0; outline:0; background:transparent;
+      font: inherit; font-size:1.7rem; font-weight:800; text-align:right; color:var(--ink);
+    }
+    .modal-foot {
+      flex-shrink: 0; display: flex; gap: 10px;
+      padding: 14px 22px calc(16px + env(safe-area-inset-bottom));
+      border-top: 1px solid #f0ece4;
+    }
+    .modal-foot button {
+      flex: 1; min-height: 52px; border-radius: 12px;
+      font: inherit; font-size: .95rem; font-weight: 800; cursor: pointer;
+      border: 1.8px solid transparent; transition: filter 120ms, background 120ms, transform 80ms;
+    }
+    .modal-foot button:active { transform: translateY(1px); }
+    .mf-cancel { background:#f2ede4; color:var(--navy); }
+    .mf-cancel:hover { background:#e9e2d4; }
+    .mf-ok-gold  { background: linear-gradient(180deg,var(--gold),var(--gold-d)); color:var(--navy-d); }
+    .mf-ok-green { background: var(--green); color:#fff; }
+    .mf-ok-red   { background: var(--red); color:#fff; }
+
+    /* ── TOASTS ── */
+    #toast-area {
+      position: fixed; left: 0; right: 0; bottom: 18px; z-index: 10001;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding: 0 16px; pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      max-width: 440px; width: 100%;
+      padding: 13px 16px; border-radius: 12px;
+      font-size: .9rem; font-weight: 700; color: #fff;
+      box-shadow: 0 10px 30px rgba(22,37,64,.25);
+      display: flex; align-items: center; gap: 10px;
+      animation: toastIn .2s ease both;
+    }
+    @keyframes toastIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform:none; } }
+    .toast.success { background:#0b7a4d; }
+    .toast.error   { background:#b42a2a; }
+    .toast.warning { background:#b9851f; }
+    .toast.info    { background:#2c4a72; }
+    .toast .tx { line-height:1.4; }
+
+    @media (min-width: 560px) {
+      .modal-overlay { align-items: center; padding: 24px; }
+      .modal-box { border-radius: 20px; }
+    }
     @media (max-width: 400px) {
-      .card-acoes { flex-direction: column; }
-      .card-acoes button { min-height: 52px; }
+      .card-acoes { flex-wrap: wrap; }
+      .card-acoes button { min-height: 50px; }
+      .card-destaque { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -224,12 +377,14 @@
 
 <!-- ── GATE ── -->
 <div id="gate">
-  <img src="assets/logo-dolci-dri.png" alt="Dolci Dri">
-  <h1>Área administrativa</h1>
-  <p class="sub">Digite a senha para acessar os pedidos</p>
-  <input type="password" id="senha" placeholder="Senha" autocomplete="current-password">
-  <button class="btn-entrar" onclick="entrar()">Entrar</button>
-  <p id="gate-erro"></p>
+  <div class="gate-card">
+    <img src="assets/logo-dolci-dri.png" alt="Dolci Dri">
+    <h1>Área administrativa</h1>
+    <p class="sub">Digite a senha para acessar os pedidos</p>
+    <input type="password" id="senha" placeholder="Senha" autocomplete="current-password">
+    <button class="btn-entrar" onclick="entrar()">Entrar</button>
+    <p id="gate-erro"></p>
+  </div>
 </div>
 
 <!-- ── DASHBOARD ── -->
@@ -240,24 +395,37 @@
       <h1>Pedidos</h1>
       <div id="adm-contador"></div>
     </div>
-    <button class="btn-atualizar" onclick="carregarPedidos()" title="Recarregar lista">&#8635; Atualizar</button>
+    <button class="btn-atualizar" id="btnAtualizar" onclick="carregarPedidos()" title="Recarregar lista">
+      <span class="ico">&#8635;</span> Atualizar
+    </button>
   </div>
 
-  <div id="filtros">
-    <button data-f="Pendente" class="ativo" onclick="filtrar(this)">Pendentes</button>
-    <button data-f="Atendido"               onclick="filtrar(this)">Atendidos</button>
-    <button data-f="Cancelado"              onclick="filtrar(this)">Cancelados</button>
-    <button data-f="Todos"                  onclick="filtrar(this)">Todos</button>
+  <div id="filtros-wrap">
+    <div id="filtros">
+      <button data-f="Pendente"  class="ativo" onclick="filtrar(this)">Pendentes <span class="pill" data-c="Pendente">0</span></button>
+      <button data-f="Confirmado"            onclick="filtrar(this)">Confirmados <span class="pill" data-c="Confirmado">0</span></button>
+      <button data-f="Atendido"              onclick="filtrar(this)">Atendidos <span class="pill" data-c="Atendido">0</span></button>
+      <button data-f="Cancelado"             onclick="filtrar(this)">Cancelados <span class="pill" data-c="Cancelado">0</span></button>
+      <button data-f="Todos"                 onclick="filtrar(this)">Todos</button>
+    </div>
   </div>
 
   <div id="loading">Carregando pedidos…</div>
-  <div id="vazio">Nenhum pedido nesta categoria.</div>
+  <div id="vazio"></div>
   <div id="lista"></div>
 
   <div class="adm-footer">
     <button class="btn-sair" onclick="sair()">Sair</button>
   </div>
 </div>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box" id="modal-box" role="dialog" aria-modal="true"></div>
+</div>
+
+<!-- ── TOASTS ── -->
+<div id="toast-area"></div>
 
 <script>
   // ── CONFIGURAÇÃO ───────────────────────────────────────────────
@@ -269,72 +437,156 @@
   var todosPedidos = [];
   var filtroAtual  = 'Pendente';
 
+  // ── Helpers ───────────────────────────────────────────────────
+  function el(id) { return document.getElementById(id); }
+  function onlyDigits(v) { return String(v || '').replace(/\D/g, ''); }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function n3(x) {
+    var n = parseInt(x, 10);
+    if (isNaN(n)) return '';
+    var s = String(n);
+    while (s.length < 3) s = '0' + s;
+    return s;
+  }
+
+  function numeroPedido(p) {
+    return p.numero ? '#' + n3(p.numero) : '#' + String(p.id || '').slice(-4);
+  }
+
+  // Valor em centavos → "1.234,56" (padrão pt-BR; armazenado sempre em centavos)
+  function fmtCentavos(c) {
+    c = Math.max(0, parseInt(c, 10) || 0);
+    var s = String(c);
+    while (s.length < 3) s = '0' + s;
+    var inteiro = s.slice(0, -2);
+    var dec     = s.slice(-2);
+    inteiro = inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return inteiro + ',' + dec;
+  }
+  function fmtReais(c) {
+    if (c === '' || c == null || isNaN(parseInt(c, 10))) return '—';
+    return 'R$ ' + fmtCentavos(c);
+  }
+
+  // Data desejada → DD/MM/AAAA. Aceita ISO (2026-06-26T03:00:00.000Z), YYYY-MM-DD ou já BR.
+  // Fatia a porção de calendário para nunca cruzar de dia por fuso (padrão T12:00:00Z / UTC-3).
+  function soData(v) {
+    if (!v) return '';
+    v = String(v);
+    var m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return m[3] + '/' + m[2] + '/' + m[1];
+    return v; // já em DD/MM/AAAA ou texto livre
+  }
+
+  // Datetime (enviado/confirmado/atendido) → DD/MM/AAAA HH:MM em America/Belem (UTC-3).
+  function dataHora(v) {
+    if (!v) return '';
+    v = String(v);
+    if (/^\d{4}-\d{2}-\d{2}T/.test(v)) {
+      var d = new Date(v);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleString('pt-BR', {
+          timeZone: 'America/Belem',
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        }).replace(',', '');
+      }
+    }
+    return v;
+  }
+
+  function horaAgora() {
+    return new Date().toLocaleString('pt-BR', {
+      timeZone: 'America/Belem',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }).replace(',', '');
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────
+  function toast(msg, tipo, ms) {
+    tipo = tipo || 'info'; ms = ms || 3400;
+    var t = document.createElement('div');
+    t.className = 'toast ' + tipo;
+    t.innerHTML = '<span class="tx">' + esc(msg) + '</span>';
+    el('toast-area').appendChild(t);
+    setTimeout(function () {
+      t.style.transition = 'opacity .2s, transform .2s';
+      t.style.opacity = '0'; t.style.transform = 'translateY(8px)';
+      setTimeout(function () { t.remove(); }, 220);
+    }, ms);
+  }
+
   // ── Autenticação ──────────────────────────────────────────────
   function checkAuth() {
     if (localStorage.getItem(AUTH_KEY) === '1') abrirDashboard();
   }
-
   function entrar() {
-    var v = document.getElementById('senha').value;
+    var v = el('senha').value;
     if (v === SENHA_CORRETA) {
       localStorage.setItem(AUTH_KEY, '1');
-      document.getElementById('gate-erro').textContent = '';
+      el('gate-erro').textContent = '';
       abrirDashboard();
     } else {
-      document.getElementById('gate-erro').textContent = 'Senha incorreta.';
+      el('gate-erro').textContent = 'Senha incorreta.';
+      toast('Senha incorreta.', 'error');
     }
   }
-
   function abrirDashboard() {
-    document.getElementById('gate').style.display      = 'none';
-    document.getElementById('dashboard').style.display = 'block';
+    el('gate').style.display = 'none';
+    el('dashboard').style.display = 'block';
     carregarPedidos();
   }
-
   function sair() {
     localStorage.removeItem(AUTH_KEY);
-    document.getElementById('dashboard').style.display = 'none';
-    document.getElementById('gate').style.display      = '';
-    document.getElementById('senha').value             = '';
-    document.getElementById('gate-erro').textContent   = '';
+    el('dashboard').style.display = 'none';
+    el('gate').style.display = '';
+    el('senha').value = '';
+    el('gate-erro').textContent = '';
   }
 
-  // ── Carregar pedidos via JSONP ─────────────────────────────────
+  // ── Carregar pedidos ──────────────────────────────────────────
   function carregarPedidos() {
-    var loading = document.getElementById('loading');
-    var vazio   = document.getElementById('vazio');
-    document.getElementById('lista').innerHTML = '';
-    vazio.style.display   = 'none';
+    var loading = el('loading'), vazio = el('vazio'), btn = el('btnAtualizar');
+    el('lista').innerHTML = '';
+    vazio.style.display = 'none';
     loading.style.display = '';
+    loading.textContent = 'Carregando pedidos…';
+    if (btn) btn.classList.add('girando');
 
     if (!SCRIPT_URL) {
       loading.innerHTML = '<div class="sem-url">'
         + '<p>Configure o <code>SCRIPT_URL</code> no topo de <code>admin.html</code></p>'
-        + '<p>após publicar o Apps Script.</p>'
-        + '<p>Veja as instruções em <code>appsscript/Code.gs</code>.</p>'
-        + '</div>';
+        + '<p>após publicar o Apps Script.</p></div>';
+      if (btn) btn.classList.remove('girando');
       return;
     }
 
-    loading.textContent = 'Carregando pedidos…';
-
     fetch(SCRIPT_URL + '?action=listar')
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
         todosPedidos = data.pedidos || [];
         loading.style.display = 'none';
         renderizarFiltro();
-        atualizarContador();
+        atualizarContadores();
       })
-      .catch(function() {
+      .catch(function () {
         loading.textContent = 'Erro ao carregar. Verifique o SCRIPT_URL e tente atualizar.';
-      });
+        toast('Não foi possível carregar os pedidos.', 'error');
+      })
+      .finally(function () { if (btn) btn.classList.remove('girando'); });
   }
 
   // ── Filtros ───────────────────────────────────────────────────
   function filtrar(btn) {
     filtroAtual = btn.dataset.f;
-    document.querySelectorAll('#filtros button').forEach(function(b) {
+    document.querySelectorAll('#filtros button').forEach(function (b) {
       b.classList.toggle('ativo', b === btn);
     });
     renderizarFiltro();
@@ -342,114 +594,269 @@
 
   // ── Renderização ──────────────────────────────────────────────
   function renderizarFiltro() {
-    var lista  = document.getElementById('lista');
-    var vazio  = document.getElementById('vazio');
+    var lista = el('lista'), vazio = el('vazio');
     var exibir = filtroAtual === 'Todos'
       ? todosPedidos
-      : todosPedidos.filter(function(p) { return p.status === filtroAtual; });
+      : todosPedidos.filter(function (p) { return (p.status || 'Pendente') === filtroAtual; });
 
     if (exibir.length === 0) {
       lista.innerHTML = '';
-      vazio.textContent = todosPedidos.length === 0
-        ? 'Nenhum pedido cadastrado ainda. Os pedidos aparecerão aqui assim que chegarem pelo site.'
-        : 'Nenhum pedido nesta categoria.';
+      vazio.innerHTML = todosPedidos.length === 0
+        ? '<span class="emoji">🍰</span>Nenhum pedido cadastrado ainda.<br>Eles aparecerão aqui assim que chegarem pelo site.'
+        : '<span class="emoji">✨</span>Nenhum pedido nesta categoria.';
       vazio.style.display = 'block';
     } else {
       vazio.style.display = 'none';
-      lista.innerHTML     = exibir.map(renderCard).join('');
+      lista.innerHTML = exibir.map(renderCard).join('');
     }
   }
 
-  function esc(s) {
-    return String(s || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+  function renderDestaque(p, concluido) {
+    return '<div class="card-destaque' + (concluido ? ' ok' : '') + '">'
+      + '<div class="cd-item"><div class="cd-label">Valor do orçamento</div><div class="cd-value">' + fmtReais(p.valor) + '</div></div>'
+      + '<div class="cd-item"><div class="cd-label">Data de entrega</div><div class="cd-value">' + esc(soData(p.data)) + '</div></div>'
+      + '</div>';
+  }
+
+  function renderAcoes(p) {
+    var status = p.status || 'Pendente';
+    var id = "'" + esc(p.id).replace(/'/g, "\\'") + "'";
+
+    if (status === 'Pendente') {
+      return '<div class="card-acoes">'
+        + '<button class="btn-gold" onclick="abrirValor(' + id + ', false)">✓ Confirmar pedido</button>'
+        + '<button class="btn-cancel" onclick="pedirConfirmacao(' + id + ', \'Cancelado\')">Cancelar</button>'
+        + '</div>';
+    }
+    if (status === 'Confirmado') {
+      return '<div class="card-acoes">'
+        + '<button class="btn-green" onclick="pedirConfirmacao(' + id + ', \'Atendido\')">✓ Entregue</button>'
+        + '<button class="btn-ghost" onclick="abrirValor(' + id + ', true)">Editar valor</button>'
+        + '<button class="btn-cancel" onclick="pedirConfirmacao(' + id + ', \'Cancelado\')">Cancelar</button>'
+        + '</div>';
+    }
+    if (status === 'Atendido') {
+      return '<div class="card-acoes">'
+        + '<button class="btn-ghost" onclick="pedirConfirmacao(' + id + ', \'Confirmado\')">↩ Reabrir pedido</button>'
+        + '</div>';
+    }
+    // Cancelado
+    return '<div class="card-acoes">'
+      + '<button class="btn-ghost" onclick="pedirConfirmacao(' + id + ', \'Pendente\')">↩ Reabrir pedido</button>'
+      + '</div>';
   }
 
   function renderCard(p) {
     var status = p.status || 'Pendente';
-    var id     = esc(p.id);
-    var wa     = 'https://wa.me/55' + String(p.telefone || '').replace(/\D/g, '');
+    var wa = 'https://wa.me/55' + onlyDigits(p.telefone);
 
-    var atendidoHtml = (status === 'Atendido' && p.atendidoEm)
-      ? '<div class="card-atendido-em">Atendido em: ' + esc(p.atendidoEm) + '</div>'
-      : '';
+    var destaque = (status === 'Confirmado' || status === 'Atendido')
+      ? renderDestaque(p, status === 'Atendido') : '';
 
     var detalhesHtml = p.detalhes
       ? '<div class="info-row"><span class="info-label">Detalhes</span><span class="info-value">' + esc(p.detalhes) + '</span></div>'
       : '';
 
-    return '<div class="card" id="card-' + id + '">'
+    // Linha de meta conforme o status
+    var meta = '';
+    if (status === 'Confirmado' && p.confirmadoEm)
+      meta = 'Confirmado em <b>' + esc(dataHora(p.confirmadoEm)) + '</b>';
+    else if (status === 'Atendido' && p.atendidoEm)
+      meta = 'Entregue em <b>' + esc(dataHora(p.atendidoEm)) + '</b>';
+    else if (status === 'Cancelado' && p.canceladoEm)
+      meta = 'Cancelado em <b>' + esc(dataHora(p.canceladoEm)) + '</b>';
+    var metaHtml = meta ? '<div class="card-meta">' + meta + '</div>' : '';
+
+    return '<div class="card" id="card-' + esc(p.id) + '">'
       + '<div class="card-top">'
         + '<div>'
+          + '<div class="card-id-line"><span class="card-num">' + esc(numeroPedido(p)) + '</span></div>'
           + '<div class="card-nome">' + esc(p.nome) + '</div>'
           + '<div class="card-produto">' + esc(p.produto) + ' — ' + esc(p.quantidade) + '</div>'
         + '</div>'
-        + '<span class="badge badge-' + esc(status) + '">' + esc(status) + '</span>'
+        + '<span class="badge badge-' + esc(status) + '"><span class="dot"></span>' + esc(status) + '</span>'
       + '</div>'
+      + destaque
       + '<div class="card-info">'
-        + '<div class="info-row"><span class="info-label">Data</span><span class="info-value">' + esc(p.data) + '</span></div>'
-        + '<div class="info-row"><span class="info-label">Entrega</span><span class="info-value">' + esc(p.entrega) + '</span></div>'
-        + '<div class="info-row"><span class="info-label">Telefone</span><span class="info-value"><a href="' + esc(wa) + '" target="_blank" rel="noopener">' + esc(p.telefone) + '</a></span></div>'
+        + '<div class="info-row"><span class="info-label">Entrega em</span><span class="info-value">' + esc(soData(p.data)) + '</span></div>'
+        + '<div class="info-row"><span class="info-label">Retirada</span><span class="info-value">' + esc(p.entrega) + '</span></div>'
+        + '<div class="info-row"><span class="info-label">Telefone</span><span class="info-value"><a class="wa" href="' + esc(wa) + '" target="_blank" rel="noopener">📱 ' + esc(p.telefone) + '</a></span></div>'
         + detalhesHtml
-        + '<div class="info-row"><span class="info-label">Pedido em</span><span class="info-value">' + esc(p.enviado) + '</span></div>'
+        + '<div class="info-row"><span class="info-label">Pedido em</span><span class="info-value">' + esc(dataHora(p.enviado)) + '</span></div>'
       + '</div>'
-      + atendidoHtml
-      + '<div class="card-acoes">'
-        + '<button class="btn-p' + (status === 'Pendente'  ? ' sel' : '') + '" onclick="mudarStatus(\'' + id + '\',\'Pendente\')">Pendente</button>'
-        + '<button class="btn-a' + (status === 'Atendido'  ? ' sel' : '') + '" onclick="mudarStatus(\'' + id + '\',\'Atendido\')">Atendido</button>'
-        + '<button class="btn-c' + (status === 'Cancelado' ? ' sel' : '') + '" onclick="mudarStatus(\'' + id + '\',\'Cancelado\')">Cancelado</button>'
-      + '</div>'
+      + metaHtml
+      + renderAcoes(p)
     + '</div>';
   }
 
-  // ── Atualizar status ──────────────────────────────────────────
-  function mudarStatus(id, novoStatus) {
-    var pedido = null;
-    for (var i = 0; i < todosPedidos.length; i++) {
-      if (todosPedidos[i].id === id) { pedido = todosPedidos[i]; break; }
-    }
-    if (!pedido) return;
+  // ── Contadores ────────────────────────────────────────────────
+  function contar(status) {
+    var n = 0;
+    for (var i = 0; i < todosPedidos.length; i++)
+      if ((todosPedidos[i].status || 'Pendente') === status) n++;
+    return n;
+  }
+  function atualizarContadores() {
+    var p = contar('Pendente'), c = contar('Confirmado');
+    ['Pendente', 'Confirmado', 'Atendido', 'Cancelado'].forEach(function (s) {
+      var pill = document.querySelector('#filtros .pill[data-c="' + s + '"]');
+      if (pill) pill.textContent = contar(s);
+    });
+    var partes = [];
+    if (p > 0) partes.push(p + (p === 1 ? ' pedido pendente' : ' pedidos pendentes'));
+    if (c > 0) partes.push(c + (c === 1 ? ' a entregar' : ' a entregar'));
+    el('adm-contador').textContent = partes.length ? partes.join(' · ') : 'Tudo em dia ✓';
+    document.title = (p > 0 ? '(' + p + ') ' : '') + 'Admin — Dolci Dri';
+  }
 
-    pedido.status     = novoStatus;
-    pedido.atendidoEm = novoStatus === 'Atendido' ? horaAgora() : '';
+  function getPedido(id) {
+    for (var i = 0; i < todosPedidos.length; i++)
+      if (String(todosPedidos[i].id) === String(id)) return todosPedidos[i];
+    return null;
+  }
+
+  // ── MODAL ─────────────────────────────────────────────────────
+  function fecharModal() {
+    el('modal').classList.remove('show');
+    el('modal-box').innerHTML = '';
+  }
+  function abrirModal(html) {
+    el('modal-box').innerHTML = html;
+    el('modal').classList.add('show');
+  }
+
+  // Confirmação para troca de status (rótulo varia conforme a transição).
+  function pedirConfirmacao(id, novoStatus) {
+    var p = getPedido(id);
+    if (!p) return;
+    var atual = p.status || 'Pendente';
+    var num   = numeroPedido(p);
+
+    var cfg = {
+      'Cancelado':  { titulo: 'Cancelar pedido ' + num + '?',  texto: 'O pedido de <b>' + esc(p.nome) + '</b> será marcado como <b>cancelado</b>.', btn: 'Sim, cancelar', cls: 'mf-ok-red' },
+      'Atendido':   { titulo: 'Marcar ' + num + ' como entregue?', texto: 'Confirme que o pedido de <b>' + esc(p.nome) + '</b> foi <b>entregue</b>.', btn: 'Sim, foi entregue', cls: 'mf-ok-green' },
+      'Confirmado': { titulo: 'Reabrir pedido ' + num + '?', texto: 'O pedido de <b>' + esc(p.nome) + '</b> voltará para <b>Confirmado</b> (a entregar).', btn: 'Sim, reabrir', cls: 'mf-ok-gold' },
+      'Pendente':   { titulo: 'Reabrir pedido ' + num + '?', texto: 'O pedido de <b>' + esc(p.nome) + '</b> voltará para <b>Pendente</b> e o orçamento será zerado.', btn: 'Sim, reabrir', cls: 'mf-ok-gold' }
+    }[novoStatus];
+
+    // Aviso extra quando se sai de um estado já "fechado" (Confirmado/Atendido/Cancelado).
+    var saindoDeFechado = (atual === 'Confirmado' || atual === 'Atendido' || atual === 'Cancelado');
+    var aviso = saindoDeFechado
+      ? '<p class="mb-sub">Status atual: <b>' + esc(atual) + '</b>. Esta troca altera um pedido já processado.</p>'
+      : '';
+
+    abrirModal(
+      '<div class="modal-head"><div class="mh-num">Pedido ' + esc(num) + '</div><h2>' + cfg.titulo + '</h2></div>'
+      + '<div class="modal-body"><p>' + cfg.texto + '</p>' + aviso + '</div>'
+      + '<div class="modal-foot">'
+        + '<button class="mf-cancel" id="mCancel">Voltar</button>'
+        + '<button class="' + cfg.cls + '" id="mOk">' + cfg.btn + '</button>'
+      + '</div>'
+    );
+    el('mCancel').onclick = fecharModal;
+    el('mOk').onclick = function () { fecharModal(); executarMudanca(id, novoStatus); };
+  }
+
+  // Modal de valor (confirmar pedido a partir de Pendente, ou editar valor de um Confirmado).
+  function abrirValor(id, editando) {
+    var p = getPedido(id);
+    if (!p) return;
+    var num = numeroPedido(p);
+    var inicial = (editando && p.valor !== '' && p.valor != null) ? parseInt(p.valor, 10) || 0 : 0;
+
+    abrirModal(
+      '<div class="modal-head"><div class="mh-num">Pedido ' + esc(num) + '</div><h2>' + (editando ? 'Editar valor' : 'Confirmar pedido') + '</h2></div>'
+      + '<div class="modal-body">'
+        + '<div class="modal-resumo">'
+          + '<div class="mr-row"><span class="mr-label">Cliente</span><span class="mr-value">' + esc(p.nome) + '</span></div>'
+          + '<div class="mr-row"><span class="mr-label">Produto</span><span class="mr-value">' + esc(p.produto) + ' — ' + esc(p.quantidade) + '</span></div>'
+          + '<div class="mr-row"><span class="mr-label">Entrega em</span><span class="mr-value">' + esc(soData(p.data)) + '</span></div>'
+        + '</div>'
+        + '<div class="money-label">Valor do orçamento</div>'
+        + '<div class="money-wrap"><span class="rs">R$</span><input id="valorInput" inputmode="numeric" autocomplete="off" placeholder="0,00"></div>'
+        + (editando ? '' : '<p class="mb-sub">Ao confirmar, o pedido passa para <b>Confirmado</b> e o cliente entra na fila de produção.</p>')
+      + '</div>'
+      + '<div class="modal-foot">'
+        + '<button class="mf-cancel" id="mCancel">Voltar</button>'
+        + '<button class="mf-ok-gold" id="mOk">' + (editando ? 'Salvar valor' : 'Confirmar pedido') + '</button>'
+      + '</div>'
+    );
+
+    var input = el('valorInput');
+    var centavos = inicial;
+    function pinta() { input.value = fmtCentavos(centavos); }
+    pinta();
+    input.addEventListener('input', function () {
+      centavos = parseInt(onlyDigits(input.value), 10) || 0;
+      pinta();
+    });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') el('mOk').click(); });
+    setTimeout(function () { input.focus(); }, 60);
+
+    el('mCancel').onclick = fecharModal;
+    el('mOk').onclick = function () {
+      if (centavos <= 0) { toast('Informe o valor do orçamento.', 'warning'); input.focus(); return; }
+      fecharModal();
+      if (editando) definirValor(id, centavos);
+      else executarMudanca(id, 'Confirmado', centavos);
+    };
+  }
+
+  // ── Executar troca de status (otimista + POST) ─────────────────
+  function executarMudanca(id, novoStatus, valorCentavos) {
+    var p = getPedido(id);
+    if (!p) return;
+    var agora = horaAgora();
+
+    p.status = novoStatus;
+    if (novoStatus === 'Confirmado') {
+      p.confirmadoEm = agora; p.atendidoEm = ''; p.canceladoEm = '';
+      if (valorCentavos != null) p.valor = valorCentavos;
+    } else if (novoStatus === 'Atendido') {
+      p.atendidoEm = agora; p.canceladoEm = '';
+    } else if (novoStatus === 'Cancelado') {
+      p.canceladoEm = agora; p.atendidoEm = '';
+    } else if (novoStatus === 'Pendente') {
+      p.confirmadoEm = ''; p.atendidoEm = ''; p.canceladoEm = ''; p.valor = '';
+    }
 
     renderizarFiltro();
-    atualizarContador();
+    atualizarContadores();
+
+    var rotulo = {
+      Confirmado: 'Pedido ' + numeroPedido(p) + ' confirmado.',
+      Atendido:   'Pedido ' + numeroPedido(p) + ' marcado como entregue.',
+      Cancelado:  'Pedido ' + numeroPedido(p) + ' cancelado.',
+      Pendente:   'Pedido ' + numeroPedido(p) + ' reaberto.'
+    }[novoStatus];
+    toast(rotulo, novoStatus === 'Cancelado' ? 'warning' : 'success');
 
     if (!SCRIPT_URL) return;
+    var body = { action: 'atualizarStatus', id: id, status: novoStatus };
+    if (valorCentavos != null) body.valor = valorCentavos;
+    fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(body) })
+      .catch(function () { toast('Falha ao salvar no servidor. Atualize para conferir.', 'error', 5000); });
+  }
+
+  function definirValor(id, valorCentavos) {
+    var p = getPedido(id);
+    if (!p) return;
+    p.valor = valorCentavos;
+    renderizarFiltro();
+    toast('Valor atualizado: ' + fmtReais(valorCentavos) + '.', 'success');
+    if (!SCRIPT_URL) return;
     fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode:   'no-cors',
-      body:   JSON.stringify({ action: 'atualizarStatus', id: id, status: novoStatus })
-    });
-  }
-
-  // ── Contador de pendentes ─────────────────────────────────────
-  function atualizarContador() {
-    var n  = 0;
-    for (var i = 0; i < todosPedidos.length; i++) {
-      if (todosPedidos[i].status === 'Pendente') n++;
-    }
-    var el = document.getElementById('adm-contador');
-    el.textContent = n === 0 ? 'Nenhum pedido pendente' : n + (n === 1 ? ' pedido pendente' : ' pedidos pendentes');
-    document.title = (n > 0 ? '(' + n + ') ' : '') + 'Admin — Dolci Dri';
-  }
-
-  function horaAgora() {
-    return new Date().toLocaleString('pt-BR', {
-      timeZone: 'America/Sao_Paulo',
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    }).replace(', ', ' ');
+      method: 'POST', mode: 'no-cors',
+      body: JSON.stringify({ action: 'definirValor', id: id, valor: valorCentavos })
+    }).catch(function () { toast('Falha ao salvar o valor.', 'error'); });
   }
 
   // ── Init ──────────────────────────────────────────────────────
-  document.getElementById('senha').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') entrar();
+  el('senha').addEventListener('keydown', function (e) { if (e.key === 'Enter') entrar(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && el('modal').classList.contains('show')) fecharModal();
   });
+  el('modal').addEventListener('click', function (e) { if (e.target === el('modal')) fecharModal(); });
   checkAuth();
 </script>
 </body>

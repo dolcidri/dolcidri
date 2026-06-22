@@ -5,15 +5,29 @@
 //    - Executar como: Eu (dolcidri@gmail.com)
 //    - Quem tem acesso: Qualquer pessoa
 // 4. Copie a URL gerada e cole em siteConfig.appsScriptUrl (script.js) e em SCRIPT_URL (admin.html)
+//
+// IMPORTANTE: ao atualizar este arquivo, reimplante com "Gerenciar implantações > Editar > Nova versão".
 
 var SHEET_NAME = 'Pedidos';
 
-// Índices base 1 (para getRange)
+// Índices base 1 (para getRange). Colunas novas vão sempre ao final (compatível com planilhas antigas).
 var C = {
   ID: 1, ENVIADO: 2, NOME: 3, TELEFONE: 4, PRODUTO: 5,
   QUANTIDADE: 6, DATA: 7, ENTREGA: 8, DETALHES: 9,
-  STATUS: 10, ATENDIDO_EM: 11
+  STATUS: 10, ATENDIDO_EM: 11,
+  NUMERO: 12, VALOR: 13, CONFIRMADO_EM: 14, CANCELADO_EM: 15
 };
+
+var HEADERS = [
+  'ID', 'Enviado em', 'Nome', 'Telefone', 'Produto',
+  'Quantidade', 'Data desejada', 'Entrega', 'Detalhes',
+  'Status', 'Atendido em',
+  'Número', 'Valor (centavos)', 'Confirmado em', 'Cancelado em'
+];
+
+function agoraBR_() {
+  return Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm');
+}
 
 // Script standalone: getActiveSpreadsheet() retorna null.
 // Usamos PropertiesService para guardar o ID e criar a planilha na primeira chamada.
@@ -33,14 +47,36 @@ function getSheet_() {
   var sh = ss.getSheetByName(SHEET_NAME);
   if (!sh) {
     sh = ss.insertSheet(SHEET_NAME);
-    sh.appendRow([
-      'ID', 'Enviado em', 'Nome', 'Telefone', 'Produto',
-      'Quantidade', 'Data desejada', 'Entrega', 'Detalhes',
-      'Status', 'Atendido em'
-    ]);
+    sh.appendRow(HEADERS);
     sh.setFrozenRows(1);
+    return sh;
+  }
+  // Migração suave: garante que as colunas novas existam no cabeçalho.
+  if (sh.getLastColumn() < HEADERS.length) {
+    for (var col = sh.getLastColumn() + 1; col <= HEADERS.length; col++) {
+      sh.getRange(1, col).setValue(HEADERS[col - 1]);
+    }
   }
   return sh;
+}
+
+// Próximo número sequencial de pedido (#1, #2, ...).
+function proximoNumero_(sh) {
+  var rows = sh.getDataRange().getValues();
+  var max  = 0;
+  for (var i = 1; i < rows.length; i++) {
+    var n = parseInt(rows[i][C.NUMERO - 1], 10);
+    if (!isNaN(n) && n > max) max = n;
+  }
+  return max + 1;
+}
+
+function linhaPorId_(sh, id) {
+  var rows = sh.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][C.ID - 1]) === String(id)) return i + 1; // linha base 1
+  }
+  return -1;
 }
 
 function doPost(e) {
@@ -49,28 +85,47 @@ function doPost(e) {
     var sh   = getSheet_();
 
     if (data.action === 'novoPedido') {
-      var id    = String(new Date().getTime());
-      var agora = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm');
+      var id     = String(new Date().getTime());
+      var numero = proximoNumero_(sh);
       sh.appendRow([
-        id, agora,
+        id, agoraBR_(),
         data.nome, data.telefone, data.produto, data.quantidade,
         data.data, data.entrega, data.detalhes || '',
-        'Pendente', ''
+        'Pendente', '',
+        numero, '', '', ''
       ]);
 
     } else if (data.action === 'atualizarStatus') {
-      var rows = sh.getDataRange().getValues();
-      for (var i = 1; i < rows.length; i++) {
-        if (String(rows[i][C.ID - 1]) === String(data.id)) {
-          sh.getRange(i + 1, C.STATUS).setValue(data.status);
-          sh.getRange(i + 1, C.ATENDIDO_EM).setValue(
-            data.status === 'Atendido'
-              ? Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm')
-              : ''
-          );
-          break;
+      var r = linhaPorId_(sh, data.id);
+      if (r > 0) {
+        var st  = data.status;
+        var now = agoraBR_();
+        sh.getRange(r, C.STATUS).setValue(st);
+
+        if (st === 'Confirmado') {
+          sh.getRange(r, C.CONFIRMADO_EM).setValue(now);
+          sh.getRange(r, C.ATENDIDO_EM).setValue('');
+          sh.getRange(r, C.CANCELADO_EM).setValue('');
+          if (data.valor !== undefined && data.valor !== null && data.valor !== '') {
+            sh.getRange(r, C.VALOR).setValue(data.valor);
+          }
+        } else if (st === 'Atendido') {
+          sh.getRange(r, C.ATENDIDO_EM).setValue(now);
+          sh.getRange(r, C.CANCELADO_EM).setValue('');
+        } else if (st === 'Cancelado') {
+          sh.getRange(r, C.CANCELADO_EM).setValue(now);
+          sh.getRange(r, C.ATENDIDO_EM).setValue('');
+        } else if (st === 'Pendente') {
+          sh.getRange(r, C.CONFIRMADO_EM).setValue('');
+          sh.getRange(r, C.ATENDIDO_EM).setValue('');
+          sh.getRange(r, C.CANCELADO_EM).setValue('');
+          sh.getRange(r, C.VALOR).setValue('');
         }
       }
+
+    } else if (data.action === 'definirValor') {
+      var rv = linhaPorId_(sh, data.id);
+      if (rv > 0) sh.getRange(rv, C.VALOR).setValue(data.valor || '');
     }
 
     return ContentService.createTextOutput('ok')
@@ -95,17 +150,21 @@ function doGet(e) {
       var r = rows[i];
       if (!r[C.ID - 1]) continue;
       pedidos.push({
-        id:         String(r[C.ID - 1]),
-        enviado:    r[C.ENVIADO - 1],
-        nome:       r[C.NOME - 1],
-        telefone:   r[C.TELEFONE - 1],
-        produto:    r[C.PRODUTO - 1],
-        quantidade: r[C.QUANTIDADE - 1],
-        data:       r[C.DATA - 1],
-        entrega:    r[C.ENTREGA - 1],
-        detalhes:   r[C.DETALHES - 1],
-        status:     r[C.STATUS - 1],
-        atendidoEm: r[C.ATENDIDO_EM - 1]
+        id:           String(r[C.ID - 1]),
+        numero:       r[C.NUMERO - 1],
+        enviado:      r[C.ENVIADO - 1],
+        nome:         r[C.NOME - 1],
+        telefone:     r[C.TELEFONE - 1],
+        produto:      r[C.PRODUTO - 1],
+        quantidade:   r[C.QUANTIDADE - 1],
+        data:         r[C.DATA - 1],
+        entrega:      r[C.ENTREGA - 1],
+        detalhes:     r[C.DETALHES - 1],
+        status:       r[C.STATUS - 1],
+        valor:        r[C.VALOR - 1],
+        confirmadoEm: r[C.CONFIRMADO_EM - 1],
+        atendidoEm:   r[C.ATENDIDO_EM - 1],
+        canceladoEm:  r[C.CANCELADO_EM - 1]
       });
     }
     pedidos.reverse(); // mais recente primeiro
