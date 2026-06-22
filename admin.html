@@ -357,7 +357,7 @@
       vazio.textContent = todosPedidos.length === 0
         ? 'Nenhum pedido cadastrado ainda. Os pedidos aparecerão aqui assim que chegarem pelo site.'
         : 'Nenhum pedido nesta categoria.';
-      vazio.style.display = '';
+      vazio.style.display = 'block';
     } else {
       vazio.style.display = 'none';
       lista.innerHTML     = exibir.map(renderCard).join('');

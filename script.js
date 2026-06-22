@@ -387,9 +387,8 @@ orderForm.addEventListener("submit", function (event) {
         addToast("Pedido enviado para o WhatsApp!", "success");
         finishOrder();
       })
-      .catch(function (e) {
-        if (e.name !== "AbortError") abrirViaUrl();
-        // AbortError = usuário cancelou o share — não faz nada
+      .catch(function () {
+        abrirViaUrl(); // fallback para wa.me em qualquer erro (inclusive AbortError do Chrome)
       });
   } else {
     abrirViaUrl();
