@@ -195,30 +195,6 @@ function resetForm() {
   dateInput.min = d.toISOString().slice(0, 10);
 }
 
-// Encoder para URLs do WhatsApp: garante UTF-8 de 4 bytes para emoji (SMP)
-// encodeURIComponent pode gerar CESU-8 (%ED... %ED...) em alguns browsers,
-// que o WhatsApp não consegue decodificar, exibindo "?".
-function encodeWA(msg) {
-  var out = "";
-  for (var i = 0; i < msg.length; ) {
-    var cp = msg.codePointAt(i);
-    if (cp > 0xFFFF) {
-      var b1 = 0xF0 | ((cp >> 18) & 0x07);
-      var b2 = 0x80 | ((cp >> 12) & 0x3F);
-      var b3 = 0x80 | ((cp >>  6) & 0x3F);
-      var b4 = 0x80 | ( cp        & 0x3F);
-      out += "%" + b1.toString(16).toUpperCase()
-           + "%" + b2.toString(16).toUpperCase()
-           + "%" + b3.toString(16).toUpperCase()
-           + "%" + b4.toString(16).toUpperCase();
-      i += 2;
-    } else {
-      out += encodeURIComponent(msg[i]);
-      i += 1;
-    }
-  }
-  return out;
-}
 
 // E — Mensagem WhatsApp com emojis via code points
 function buildMessage(data) {
@@ -361,36 +337,30 @@ orderForm.addEventListener("submit", function (event) {
     addToast(deliveryError, "warning");
     return;
   }
-  const message     = buildMessage(data);
-  const waUrl       = "https://wa.me/" + siteConfig.whatsappNumber + "?text=" + encodeWA(message);
-  const isPlaceholder = siteConfig.whatsappNumber === siteConfig.placeholderNumber;
 
-  function finishOrder() {
-    saveOrder(data);
-    resetForm();
+  const message = buildMessage(data);
+
+  if (siteConfig.whatsappNumber === siteConfig.placeholderNumber) {
+    addToast("O pedido foi montado. Substitua o WhatsApp placeholder para uso real.", "warning", 5200);
+    return;
   }
 
-  function abrirViaUrl() {
-    if (isPlaceholder) {
-      addToast("O pedido foi montado. Substitua o WhatsApp placeholder para uso real.", "warning", 5200);
-    } else {
-      addToast("Pedido enviado para o WhatsApp!", "success");
-    }
-    window.open(waUrl, "_blank", "noopener,noreferrer");
-    finishOrder();
-  }
+  // Abre WhatsApp direto no número certo (sem ?text= para evitar corrupção de emoji via URL)
+  window.open("https://wa.me/" + siteConfig.whatsappNumber, "_blank", "noopener,noreferrer");
 
-  // navigator.share entrega o texto direto ao SO, sem URL encoding — resolve emoji SMP
-  if (typeof navigator.share === "function" && !isPlaceholder) {
-    navigator.share({ text: message })
+  // Copia a mensagem com emoji para a área de transferência
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(message)
       .then(function () {
-        addToast("Pedido enviado para o WhatsApp!", "success");
-        finishOrder();
+        addToast("Mensagem copiada! Cole no chat da Dolci Dri no WhatsApp.", "success", 6000);
       })
       .catch(function () {
-        abrirViaUrl(); // fallback para wa.me em qualquer erro (inclusive AbortError do Chrome)
+        addToast("WhatsApp aberto!", "success");
       });
   } else {
-    abrirViaUrl();
+    addToast("WhatsApp aberto!", "success");
   }
+
+  saveOrder(data);
+  resetForm();
 });
