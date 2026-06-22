@@ -361,14 +361,37 @@ orderForm.addEventListener("submit", function (event) {
     addToast(deliveryError, "warning");
     return;
   }
-  const message = buildMessage(data);
-  const target  = "https://wa.me/" + siteConfig.whatsappNumber + "?text=" + encodeWA(message);
-  if (siteConfig.whatsappNumber === siteConfig.placeholderNumber) {
-    addToast("O pedido foi montado. Substitua o WhatsApp placeholder para uso real.", "warning", 5200);
-  } else {
-    addToast("Pedido enviado para o WhatsApp!", "success");
+  const message     = buildMessage(data);
+  const waUrl       = "https://wa.me/" + siteConfig.whatsappNumber + "?text=" + encodeWA(message);
+  const isPlaceholder = siteConfig.whatsappNumber === siteConfig.placeholderNumber;
+
+  function finishOrder() {
+    saveOrder(data);
+    resetForm();
   }
-  window.open(target, "_blank", "noopener,noreferrer");
-  saveOrder(data);
-  resetForm();
+
+  function abrirViaUrl() {
+    if (isPlaceholder) {
+      addToast("O pedido foi montado. Substitua o WhatsApp placeholder para uso real.", "warning", 5200);
+    } else {
+      addToast("Pedido enviado para o WhatsApp!", "success");
+    }
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+    finishOrder();
+  }
+
+  // navigator.share entrega o texto direto ao SO, sem URL encoding — resolve emoji SMP
+  if (typeof navigator.share === "function" && !isPlaceholder) {
+    navigator.share({ text: message })
+      .then(function () {
+        addToast("Pedido enviado para o WhatsApp!", "success");
+        finishOrder();
+      })
+      .catch(function (e) {
+        if (e.name !== "AbortError") abrirViaUrl();
+        // AbortError = usuário cancelou o share — não faz nada
+      });
+  } else {
+    abrirViaUrl();
+  }
 });
