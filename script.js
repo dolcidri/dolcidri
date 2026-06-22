@@ -3,7 +3,7 @@ const siteConfig = {
   placeholderNumber: "5500000000000",
   email: "dolcidri@gmail.com",
   minDaysAhead: 3,
-  appsScriptUrl: ""  // ← cole aqui a URL do Apps Script após publicar
+  appsScriptUrl: "https://script.google.com/macros/s/AKfycbySJRsCP_uKNY5XgtdrP5KKY_e4hcNU-2Ka5D4XzJ4KKB6Z23hvM3eRBmJqTBYVl7ohbw/exec"
 };
 
 const CIDADES_ENTREGA = ["gramado", "canela"];
