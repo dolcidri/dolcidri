@@ -15,8 +15,21 @@ var C = {
   STATUS: 10, ATENDIDO_EM: 11
 };
 
+// Script standalone: getActiveSpreadsheet() retorna null.
+// Usamos PropertiesService para guardar o ID e criar a planilha na primeira chamada.
+function getSpreadsheet_() {
+  var props = PropertiesService.getScriptProperties();
+  var id    = props.getProperty('SHEET_ID');
+  if (id) {
+    try { return SpreadsheetApp.openById(id); } catch (e) {}
+  }
+  var ss = SpreadsheetApp.create('Dolci Dri — Pedidos');
+  props.setProperty('SHEET_ID', ss.getId());
+  return ss;
+}
+
 function getSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = getSpreadsheet_();
   var sh = ss.getSheetByName(SHEET_NAME);
   if (!sh) {
     sh = ss.insertSheet(SHEET_NAME);
