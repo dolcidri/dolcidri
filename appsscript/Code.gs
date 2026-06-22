@@ -15,14 +15,16 @@ var C = {
   ID: 1, ENVIADO: 2, NOME: 3, TELEFONE: 4, PRODUTO: 5,
   QUANTIDADE: 6, DATA: 7, ENTREGA: 8, DETALHES: 9,
   STATUS: 10, ATENDIDO_EM: 11,
-  NUMERO: 12, VALOR: 13, CONFIRMADO_EM: 14, CANCELADO_EM: 15
+  NUMERO: 12, VALOR: 13, CONFIRMADO_EM: 14, CANCELADO_EM: 15,
+  ENTREGUE_EM: 16
 };
 
 var HEADERS = [
   'ID', 'Enviado em', 'Nome', 'Telefone', 'Produto',
   'Quantidade', 'Data desejada', 'Entrega', 'Detalhes',
   'Status', 'Atendido em',
-  'Número', 'Valor (centavos)', 'Confirmado em', 'Cancelado em'
+  'Número', 'Valor (centavos)', 'Confirmado em', 'Cancelado em',
+  'Entregue em (efetiva)'
 ];
 
 function agoraBR_() {
@@ -92,7 +94,7 @@ function doPost(e) {
         data.nome, data.telefone, data.produto, data.quantidade,
         data.data, data.entrega, data.detalhes || '',
         'Pendente', '',
-        numero, '', '', ''
+        numero, '', '', '', ''
       ]);
 
     } else if (data.action === 'atualizarStatus') {
@@ -107,19 +109,23 @@ function doPost(e) {
           sh.getRange(r, C.CONFIRMADO_EM).setValue(now);
           sh.getRange(r, C.ATENDIDO_EM).setValue('');
           sh.getRange(r, C.CANCELADO_EM).setValue('');
+          sh.getRange(r, C.ENTREGUE_EM).setValue('');
           if (data.valor !== undefined && data.valor !== null && data.valor !== '') {
             sh.getRange(r, C.VALOR).setValue(data.valor);
           }
         } else if (st === 'Atendido') {
           sh.getRange(r, C.ATENDIDO_EM).setValue(now);
           sh.getRange(r, C.CANCELADO_EM).setValue('');
+          sh.getRange(r, C.ENTREGUE_EM).setValue(data.entregueEm || '');
         } else if (st === 'Cancelado') {
           sh.getRange(r, C.CANCELADO_EM).setValue(now);
           sh.getRange(r, C.ATENDIDO_EM).setValue('');
+          sh.getRange(r, C.ENTREGUE_EM).setValue('');
         } else if (st === 'Pendente') {
           sh.getRange(r, C.CONFIRMADO_EM).setValue('');
           sh.getRange(r, C.ATENDIDO_EM).setValue('');
           sh.getRange(r, C.CANCELADO_EM).setValue('');
+          sh.getRange(r, C.ENTREGUE_EM).setValue('');
           sh.getRange(r, C.VALOR).setValue('');
         }
       }
@@ -168,7 +174,8 @@ function doGet(e) {
         valor:        r[C.VALOR - 1],
         confirmadoEm: r[C.CONFIRMADO_EM - 1],
         atendidoEm:   r[C.ATENDIDO_EM - 1],
-        canceladoEm:  r[C.CANCELADO_EM - 1]
+        canceladoEm:  r[C.CANCELADO_EM - 1],
+        entregueEm:   r[C.ENTREGUE_EM - 1]
       });
     }
     pedidos.reverse(); // mais recente primeiro

@@ -534,6 +534,11 @@
     }).replace(',', '');
   }
 
+  // Hoje em YYYY-MM-DD (America/Belem), para default de <input type="date">.
+  function hojeInput() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Belem' });
+  }
+
   // ── Toast ─────────────────────────────────────────────────────
   function toast(msg, tipo, ms) {
     tipo = tipo || 'info'; ms = ms || 3400;
@@ -637,9 +642,11 @@
   }
 
   function renderDestaque(p, concluido) {
+    var dataLabel = concluido ? 'Entregue em' : 'Data de entrega';
+    var dataValue = concluido ? (soData(p.entregueEm) || soData(p.data)) : soData(p.data);
     return '<div class="card-destaque' + (concluido ? ' ok' : '') + '">'
       + '<div class="cd-item"><div class="cd-label">Valor do orçamento</div><div class="cd-value">' + fmtReais(p.valor) + '</div></div>'
-      + '<div class="cd-item"><div class="cd-label">Data de entrega</div><div class="cd-value">' + esc(soData(p.data)) + '</div></div>'
+      + '<div class="cd-item"><div class="cd-label">' + dataLabel + '</div><div class="cd-value">' + esc(dataValue) + '</div></div>'
       + '</div>';
   }
 
@@ -655,7 +662,7 @@
     }
     if (status === 'Confirmado') {
       return '<div class="card-acoes">'
-        + '<button class="btn-green" onclick="pedirConfirmacao(' + id + ', \'Atendido\')">✓ Entregue</button>'
+        + '<button class="btn-green" onclick="abrirEntrega(' + id + ')">✓ Entregue</button>'
         + '<button class="btn-ghost" onclick="abrirValor(' + id + ', true)">Editar</button>'
         + '<button class="btn-cancel" onclick="pedirConfirmacao(' + id + ', \'Cancelado\')">Cancelar</button>'
         + '</div>';
@@ -687,7 +694,7 @@
     if (status === 'Confirmado' && p.confirmadoEm)
       meta = 'Confirmado em <b>' + esc(dataHora(p.confirmadoEm)) + '</b>';
     else if (status === 'Atendido' && p.atendidoEm)
-      meta = 'Entregue em <b>' + esc(dataHora(p.atendidoEm)) + '</b>';
+      meta = 'Baixa registrada em <b>' + esc(dataHora(p.atendidoEm)) + '</b>';
     else if (status === 'Cancelado' && p.canceladoEm)
       meta = 'Cancelado em <b>' + esc(dataHora(p.canceladoEm)) + '</b>';
     var metaHtml = meta ? '<div class="card-meta">' + meta + '</div>' : '';
@@ -833,23 +840,60 @@
     };
   }
 
+  // Modal de confirmação de entrega — pede a data efetiva (Confirmado → Atendido).
+  function abrirEntrega(id) {
+    var p = getPedido(id);
+    if (!p) return;
+    var num = numeroPedido(p);
+    var def = paraInputDate(p.data) || hojeInput();
+
+    abrirModal(
+      '<div class="modal-head"><div class="mh-num">Pedido ' + esc(num) + '</div><h2>Confirmar entrega</h2></div>'
+      + '<div class="modal-body">'
+        + '<div class="modal-resumo">'
+          + '<div class="mr-row"><span class="mr-label">Cliente</span><span class="mr-value">' + esc(p.nome) + '</span></div>'
+          + '<div class="mr-row"><span class="mr-label">Produto</span><span class="mr-value">' + esc(p.produto) + ' — ' + esc(p.quantidade) + '</span></div>'
+          + '<div class="mr-row"><span class="mr-label">Entrega prevista</span><span class="mr-value">' + esc(soData(p.data)) + '</span></div>'
+        + '</div>'
+        + '<div class="field-data">'
+          + '<div class="money-label">Data da entrega efetiva</div>'
+          + '<input type="date" id="entregaInput" value="' + esc(def) + '">'
+        + '</div>'
+        + '<p class="mb-sub">Ao confirmar, o pedido passa para <b>Atendido</b> (concluído).</p>'
+      + '</div>'
+      + '<div class="modal-foot">'
+        + '<button class="mf-cancel" id="mCancel">Voltar</button>'
+        + '<button class="mf-ok-green" id="mOk">✓ Confirmar entrega</button>'
+      + '</div>'
+    );
+
+    el('mCancel').onclick = fecharModal;
+    el('mOk').onclick = function () {
+      var v = el('entregaInput').value;
+      if (!v) { toast('Informe a data da entrega.', 'warning'); el('entregaInput').focus(); return; }
+      fecharModal();
+      executarMudanca(id, 'Atendido', null, null, inputDateParaBR(v));
+    };
+  }
+
   // ── Executar troca de status (otimista + POST) ─────────────────
-  function executarMudanca(id, novoStatus, valorCentavos, dataBR) {
+  function executarMudanca(id, novoStatus, valorCentavos, dataBR, entregueBR) {
     var p = getPedido(id);
     if (!p) return;
     var agora = horaAgora();
 
     p.status = novoStatus;
     if (novoStatus === 'Confirmado') {
-      p.confirmadoEm = agora; p.atendidoEm = ''; p.canceladoEm = '';
+      p.confirmadoEm = agora; p.atendidoEm = ''; p.canceladoEm = ''; p.entregueEm = '';
       if (valorCentavos != null) p.valor = valorCentavos;
       if (dataBR) p.data = dataBR;
     } else if (novoStatus === 'Atendido') {
       p.atendidoEm = agora; p.canceladoEm = '';
+      if (entregueBR) p.entregueEm = entregueBR;
     } else if (novoStatus === 'Cancelado') {
-      p.canceladoEm = agora; p.atendidoEm = '';
+      p.canceladoEm = agora; p.atendidoEm = ''; p.entregueEm = '';
     } else if (novoStatus === 'Pendente') {
-      p.confirmadoEm = ''; p.atendidoEm = ''; p.canceladoEm = ''; p.valor = '';
+      p.confirmadoEm = ''; p.atendidoEm = ''; p.canceladoEm = ''; p.entregueEm = ''; p.valor = '';
     }
 
     renderizarFiltro();
@@ -867,6 +911,7 @@
     var body = { action: 'atualizarStatus', id: id, status: novoStatus };
     if (valorCentavos != null) body.valor = valorCentavos;
     if (dataBR) body.data = dataBR;
+    if (entregueBR) body.entregueEm = entregueBR;
     fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(body) })
       .catch(function () { toast('Falha ao salvar no servidor. Atualize para conferir.', 'error', 5000); });
   }

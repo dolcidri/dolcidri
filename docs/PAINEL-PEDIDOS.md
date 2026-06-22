@@ -23,7 +23,7 @@ Pendente ───┤
 |---|---|---|
 | **Pendente** | Pedido entrou pelo site, aguardando análise/orçamento | Confirmado, Cancelado |
 | **Confirmado** | Orçamento aprovado, na fila de produção. Tem **valor** e **data de entrega** | Atendido, Cancelado |
-| **Atendido** | Orçamento aprovado e pedido entregue | Reabrir → Confirmado |
+| **Atendido** | Orçamento aprovado e pedido entregue. Registra a **data de entrega efetiva** | Reabrir → Confirmado |
 | **Cancelado** | Não aprovado, ou desistência após aprovação | Reabrir → Pendente |
 
 ### Confirmação de troca de status
@@ -40,6 +40,13 @@ Toda troca que **sai de** um estado já processado (`Confirmado`, `Atendido` ou 
 
 - O modal "Confirmar pedido" / "Editar" tem um `<input type="date">` pré-preenchido com a data atual; a Adriana pode ajustar antes de confirmar.
 - Convertida de/para `YYYY-MM-DD` (`paraInputDate` / `inputDateParaBR`) e gravada na planilha no padrão `DD/MM/AAAA`. Persistida pelas ações `atualizarStatus` e `definirValor` (campo `data`).
+
+### Data de entrega efetiva (confirmação de entrega)
+
+- Ao marcar como **Entregue** (Confirmado → Atendido), abre o modal "Confirmar entrega" pedindo a **data da entrega efetiva** (`<input type="date">`, default = data prevista, ou hoje se vazia).
+- Gravada na coluna 16 **`Entregue em (efetiva)`** (DD/MM/AAAA), separada de `Atendido em` (coluna 11), que continua sendo o timestamp da baixa no sistema.
+- No card do pedido Atendido, o destaque mostra "Entregue em" usando a data efetiva (fallback para a prevista em registros antigos); a meta exibe "Baixa registrada em" com o timestamp.
+- Enviada no payload `atualizarStatus` como campo `entregueEm`. Limpa ao reabrir/cancelar.
 
 ## Número do pedido
 
