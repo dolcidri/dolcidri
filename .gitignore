@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+desktop.ini
+*.pyc
+__pycache__/
+
+# Arquivos fonte não publicados
+assets/bolo-copa-original.jpg
+assets/products/*-ilustrativo.jpg
+assets/products/video mesa.mp4

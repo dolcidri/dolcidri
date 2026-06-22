@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dolci Dri Confeitaria | Doces artesanais sob encomenda</title>
+    <meta
+      name="description"
+      content="Site institucional e comercial da Dolci Dri Confeitaria, com produtos artesanais sob encomenda, contato e pedido direto."
+    >
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header" aria-label="Cabeçalho">
+      <a class="brand" href="#inicio" aria-label="Dolci Dri Confeitaria">
+        <img src="assets/logo-dolci-dri.png" alt="Dolci Dri Confeitaria">
+      </a>
+      <nav class="nav" aria-label="Navegação principal">
+        <a href="#produtos">Produtos</a>
+        <a href="#artesanal">Artesanal</a>
+        <a href="#encomenda">Encomendar</a>
+        <a href="#contato">Contato</a>
+      </nav>
+      <a class="header-cta" href="#encomenda">Pedir agora</a>
+      <button class="nav-toggle" type="button" aria-label="Abrir menu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </header>
+
+    <main id="inicio">
+      <section class="hero" aria-label="Apresentação da marca">
+        <div class="hero-content">
+          <img class="hero-logo" src="assets/logo-dolci-dri.png" alt="Dolci Dri Confeitaria">
+          <p class="eyebrow">Confeitaria artesanal sob encomenda</p>
+          <h1>Dolci Dri Confeitaria</h1>
+          <p class="hero-copy">
+            Doces finos, bolos e lembranças preparados em pequenas levas, com acabamento manual
+            e atenção ao sabor que uma produção industrial não entrega.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#encomenda">Fazer encomenda</a>
+            <a class="button secondary" href="#produtos">Ver produtos</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section intro">
+        <div class="section-copy">
+          <p class="eyebrow">Feito para momentos especiais</p>
+          <h2>Do planejamento à finalização, cada encomenda nasce para uma ocasião real.</h2>
+        </div>
+        <div class="intro-grid" aria-label="Diferenciais rápidos">
+          <article>
+            <span>01</span>
+            <h3>Receitas em pequena escala</h3>
+            <p>Mais controle de ponto, textura e frescor em cada preparo.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Acabamento manual</h3>
+            <p>Cada detalhe é ajustado conforme o pedido, sem padrão de fábrica.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Encomenda personalizada</h3>
+            <p>Sabores, quantidades e apresentação podem ser combinados antes da produção.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section products" id="produtos">
+        <div class="section-copy">
+          <p class="eyebrow">Vitrine comercial</p>
+          <h2>Produtos artesanais para encomenda</h2>
+        </div>
+
+        <div class="product-grid">
+          <article class="product-card featured-product">
+            <img src="assets/products/bolo-verde-amarelo.jpg" alt="Bolo verde e amarelo artesanal">
+            <div>
+              <span class="tag real">Foto real</span>
+              <h3>Bolos decorados</h3>
+              <p>Bolos artesanais sob encomenda para festas, datas temáticas e celebrações familiares.</p>
+              <a href="#encomenda" data-product="Bolos decorados">Encomendar</a>
+            </div>
+          </article>
+
+          <article class="product-card">
+            <img src="assets/products/bolo-limao-topo.jpg" alt="Bolo de limão artesanal com cobertura cremosa e raspas">
+            <div>
+              <span class="tag real">Foto real</span>
+              <h3>Bolo de Limão</h3>
+              <p>Cobertura cremosa de limão, raspas frescas e fatias caramelizadas. Leve, perfumado e irresistível.</p>
+              <a href="#encomenda" data-product="Bolo de Limão">Encomendar</a>
+            </div>
+          </article>
+
+          <article class="product-card">
+            <img src="assets/products/tabua-frios-grande.jpg" alt="Tábua de frios completa com queijos, salames, frutas e acompanhamentos">
+            <div>
+              <span class="tag real">Foto real</span>
+              <h3>Tábua de Frios</h3>
+              <p>Queijos, embutidos, frutas, conservas e acompanhamentos artesanais compostos com cuidado para cada ocasião.</p>
+              <a href="#encomenda" data-product="Tábua de Frios">Encomendar</a>
+            </div>
+          </article>
+
+          <article class="product-card">
+            <img src="assets/products/tabua-frios-redonda.jpg" alt="Tábua de frios redonda com seleção de queijos, salame e frutas">
+            <div>
+              <span class="tag real">Foto real</span>
+              <h3>Tábua Redonda</h3>
+              <p>Composição em tábua circular com queijos variados, salame, uvas, morangos e conservas.</p>
+              <a href="#encomenda" data-product="Tábua Redonda">Encomendar</a>
+            </div>
+          </article>
+
+          <article class="product-card">
+            <img src="assets/products/tabua-frios-canoa.jpg" alt="Tábua de frios em formato canoa com embutidos e queijos">
+            <div>
+              <span class="tag real">Foto real</span>
+              <h3>Tábua Canoa</h3>
+              <p>Tábua em madeira rústica formato canoa — visual elegante, ideal para mesas de celebração.</p>
+              <a href="#encomenda" data-product="Tábua Canoa">Encomendar</a>
+            </div>
+          </article>
+
+          <article class="product-card">
+            <img src="assets/products/torta-fria.jpg" alt="Torta fria artesanal decorada com salsa e pimentão">
+            <div>
+              <span class="tag real">Foto real</span>
+              <h3>Torta Fria</h3>
+              <p>Torta salgada artesanal com recheio cremoso, montagem em camadas e finalização decorada.</p>
+              <a href="#encomenda" data-product="Torta fria">Encomendar</a>
+            </div>
+          </article>
+
+          <article class="product-card video-card">
+            <video controls playsinline preload="metadata">
+              <source src="assets/products/video mesa sem audio.mp4" type="video/mp4">
+              Seu navegador não conseguiu reproduzir este vídeo.
+            </video>
+            <div>
+              <span class="tag real">Vídeo real</span>
+              <h3>Mesa de Frios em vídeo</h3>
+              <p>Registro em vídeo para mostrar textura, volume e apresentação dos produtos preparados à mão.</p>
+              <a href="#encomenda" data-product="Mesa de Frios">Encomendar mesa</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section craft" id="artesanal">
+        <div class="craft-media">
+          <img src="assets/products/bolo-limao-lateral.jpg" alt="Bolo de limão artesanal — acabamento e cobertura cremosa">
+        </div>
+        <div class="craft-copy">
+          <p class="eyebrow">Por que artesanal é melhor</p>
+          <h2>Porque a receita responde ao momento, não a uma linha de produção.</h2>
+          <p>
+            Em produtos industriais, o objetivo costuma ser repetir grandes volumes com longa
+            validade. Na confeitaria artesanal, o foco muda: preparo próximo da entrega, escolha
+            cuidadosa dos ingredientes e ajuste manual do acabamento.
+          </p>
+          <div class="reason-list">
+            <article>
+              <h3>Mais frescor</h3>
+              <p>Produção por encomenda reduz espera em estoque e preserva textura.</p>
+            </article>
+            <article>
+              <h3>Mais personalidade</h3>
+              <p>Cores, sabores e apresentação podem acompanhar o tipo de celebração.</p>
+            </article>
+            <article>
+              <h3>Mais cuidado</h3>
+              <p>Pequenas levas permitem observar ponto, recheio, cobertura e finalização.</p>
+            </article>
+            <article>
+              <h3>Mais significado</h3>
+              <p>A encomenda é pensada para pessoas específicas, não para uma prateleira genérica.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section process" aria-label="Como funciona a encomenda">
+        <div class="section-copy">
+          <p class="eyebrow">Encomenda direta</p>
+          <h2>Um fluxo simples para combinar tudo antes da produção</h2>
+        </div>
+        <div class="steps">
+          <article>
+            <span>1</span>
+            <h3>Escolha o produto</h3>
+            <p>Selecione uma categoria ou descreva a ideia da ocasião.</p>
+          </article>
+          <article>
+            <span>2</span>
+            <h3>Informe data e quantidade</h3>
+            <p>O prazo ideal será confirmado conforme agenda e complexidade.</p>
+          </article>
+          <article>
+            <span>3</span>
+            <h3>Receba confirmação</h3>
+            <p>Valores, retirada ou entrega serão combinados antes da produção.</p>
+          </article>
+          <article>
+            <span>4</span>
+            <h3>Produção artesanal</h3>
+            <p>Seu pedido é preparado em pequena escala, perto da data combinada.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section order-section" id="encomenda">
+        <div class="order-copy">
+          <p class="eyebrow">Pedido pelo site</p>
+          <h2>Monte sua solicitação de encomenda</h2>
+          <p>
+            Preencha o formulário e clique em enviar — o WhatsApp abre com a mensagem já montada.
+          </p>
+          <div class="contact-panel" id="contato">
+            <h3>Contato</h3>
+            <dl>
+              <div>
+                <dt>WhatsApp</dt>
+                <dd>(54) 9 9404-7528</dd>
+              </div>
+              <div>
+                <dt>Instagram</dt>
+                <dd>@adrianamaia2802</dd>
+              </div>
+              <div>
+                <dt>E-mail</dt>
+                <dd>dolcidri@gmail.com</dd>
+              </div>
+              <div>
+                <dt>Retirada</dt>
+                <dd>Rua Pessegueiro, 44 — Carniel, Gramado/RS</dd>
+              </div>
+              <div>
+                <dt>Atendimento</dt>
+                <dd>Horário comercial</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
+        <form class="order-form" id="orderForm">
+          <div class="field">
+            <label for="name">Nome</label>
+            <input id="name" name="name" autocomplete="name" placeholder="Seu nome" required>
+          </div>
+          <div class="field">
+            <label for="phone">Telefone</label>
+            <input id="phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="(00) 0 0000-0000" required>
+          </div>
+          <div class="field">
+            <label for="product">Produto de interesse</label>
+            <select id="product" name="product" required>
+              <option value="">Selecione</option>
+              <option>Bolos decorados</option>
+              <option>Bolo de Limão</option>
+              <option>Tábua de Frios</option>
+              <option>Tábua Redonda</option>
+              <option>Tábua Canoa</option>
+              <option>Torta fria</option>
+              <option>Mesa de Frios</option>
+              <option>Outro produto artesanal</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="quantity">Quantidade</label>
+              <input id="quantity" name="quantity" inputmode="numeric" placeholder="Ex.: 1 bolo / 50 doces" required>
+            </div>
+            <div class="field">
+              <label for="date">Data desejada</label>
+              <input id="date" name="date" type="date" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="notes">Detalhes do pedido</label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows="5"
+              placeholder="Tema, sabores, quantidade de pessoas, endereço para entrega ou retirada."
+            ></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="button primary" type="submit">Enviar pelo WhatsApp</button>
+            <button class="button email-btn" type="button" id="emailBtn">Enviar por e-mail</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <img src="assets/logo-dolci-dri.png" alt="Dolci Dri Confeitaria">
+      <p>Dolci Dri Confeitaria. Doces artesanais sob encomenda.</p>
+      <p class="placeholder-note">Rua Pessegueiro, 44 — Carniel, Gramado/RS &nbsp;·&nbsp; (54) 9 9404-7528</p>
+    </footer>
+
+    <div class="toast-area" id="toastArea" aria-live="polite" aria-atomic="true"></div>
+    <script src="script.js"></script>
+  </body>
+</html>
