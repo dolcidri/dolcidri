@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Dolci Dri</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5ead8;
+      color: #162438;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── GATE ── */
+    #gate {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 32px 24px;
+      gap: 18px;
+    }
+    #gate img { width: 160px; }
+    #gate h1 { font-size: 1.3rem; color: #253e5d; text-align: center; }
+    #gate .sub { font-size: 0.9rem; color: #5e6e82; text-align: center; }
+    #gate input {
+      width: min(320px, 100%);
+      min-height: 54px;
+      padding: 0 20px;
+      border: 1.5px solid #dac9b0;
+      border-radius: 10px;
+      font: inherit;
+      font-size: 1.15rem;
+      text-align: center;
+      letter-spacing: 0.12em;
+      background: #fff;
+      color: #162438;
+    }
+    #gate input:focus { outline: 3px solid rgba(232,179,92,.4); border-color: #e8b35c; }
+    #gate .btn-entrar {
+      width: min(320px, 100%);
+      min-height: 54px;
+      background: #e8b35c;
+      color: #162540;
+      border: 0;
+      border-radius: 10px;
+      font: inherit;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    #gate .btn-entrar:hover { background: #d9a44c; }
+    #gate-erro { color: #b42a2a; font-size: 0.9rem; min-height: 1.2em; }
+
+    /* ── DASHBOARD ── */
+    #dashboard { display: none; max-width: 680px; margin: 0 auto; padding: 0 16px 64px; }
+
+    /* Header */
+    .adm-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 20px 0 18px;
+      border-bottom: 2px solid #e6d4bc;
+      margin-bottom: 20px;
+    }
+    .adm-header img { width: 88px; flex-shrink: 0; }
+    .adm-header-info { flex: 1; }
+    .adm-header-info h1 { font-size: 1.2rem; color: #253e5d; font-weight: 800; }
+    #adm-contador { margin-top: 3px; font-size: 0.88rem; font-weight: 700; color: #007047; min-height: 1.2em; }
+    .btn-atualizar {
+      flex-shrink: 0;
+      min-height: 42px;
+      padding: 0 16px;
+      background: #253e5d;
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-atualizar:hover { background: #162540; }
+
+    /* Filtros */
+    #filtros {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    #filtros::-webkit-scrollbar { display: none; }
+    #filtros button {
+      min-height: 40px;
+      padding: 0 18px;
+      border: 2px solid #253e5d;
+      border-radius: 999px;
+      background: transparent;
+      color: #253e5d;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 120ms, color 120ms;
+    }
+    #filtros button.ativo { background: #253e5d; color: #fff; }
+
+    /* Cards */
+    .card {
+      background: #fff;
+      border: 1px solid #e6d4bc;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 18px rgba(22,37,64,.07);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .card-nome { font-size: 1.1rem; font-weight: 800; color: #162540; }
+    .card-produto { font-size: 0.9rem; color: #5e6e82; margin-top: 3px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 13px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .badge-Pendente  { background: #fef0d6; color: #7a5135; }
+    .badge-Atendido  { background: #e0f5ec; color: #007047; }
+    .badge-Cancelado { background: #f0ede9; color: #5e6e82; }
+
+    .card-info { display: grid; gap: 7px; font-size: 0.9rem; margin-bottom: 14px; }
+    .info-row { display: flex; gap: 10px; align-items: baseline; }
+    .info-label { color: #5e6e82; font-weight: 700; min-width: 80px; flex-shrink: 0; }
+    .info-value { color: #162438; word-break: break-word; }
+    .info-value a { color: #253e5d; font-weight: 700; }
+
+    .card-atendido-em {
+      font-size: 0.82rem;
+      color: #007047;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .card-acoes { display: flex; gap: 8px; }
+    .card-acoes button {
+      flex: 1;
+      min-height: 48px;
+      border-radius: 8px;
+      border: 2px solid;
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 120ms, color 120ms;
+    }
+    .btn-p              { border-color: #c49a40; color: #7a5135; background: transparent; }
+    .btn-p.sel          { background: #e8b35c; color: #162540; border-color: #e8b35c; }
+    .btn-a              { border-color: #007047; color: #007047; background: transparent; }
+    .btn-a.sel          { background: #007047; color: #fff; }
+    .btn-c              { border-color: #b42a2a; color: #b42a2a; background: transparent; }
+    .btn-c.sel          { background: #b42a2a; color: #fff; }
+
+    /* Estados */
+    #loading {
+      text-align: center;
+      padding: 48px 24px;
+      color: #5e6e82;
+      font-size: 0.95rem;
+    }
+    #vazio {
+      display: none;
+      text-align: center;
+      padding: 48px 24px;
+      color: #5e6e82;
+      font-size: 0.95rem;
+    }
+    .sem-url { line-height: 1.7; }
+    .sem-url code {
+      font-family: monospace;
+      background: #f0e8dd;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.92rem;
+    }
+
+    /* Rodapé */
+    .adm-footer { text-align: center; padding: 28px 0; }
+    .btn-sair {
+      background: transparent;
+      border: 0;
+      color: #5e6e82;
+      font: inherit;
+      font-size: 0.88rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 400px) {
+      .card-acoes { flex-direction: column; }
+      .card-acoes button { min-height: 52px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── GATE ── -->
+<div id="gate">
+  <img src="assets/logo.png" alt="Dolci Dri">
+  <h1>Área administrativa</h1>
+  <p class="sub">Digite a senha para acessar os pedidos</p>
+  <input type="password" id="senha" placeholder="Senha" autocomplete="current-password">
+  <button class="btn-entrar" onclick="entrar()">Entrar</button>
+  <p id="gate-erro"></p>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboard">
+  <div class="adm-header">
+    <img src="assets/logo.png" alt="Dolci Dri">
+    <div class="adm-header-info">
+      <h1>Pedidos</h1>
+      <div id="adm-contador"></div>
+    </div>
+    <button class="btn-atualizar" onclick="carregarPedidos()" title="Recarregar lista">&#8635; Atualizar</button>
+  </div>
+
+  <div id="filtros">
+    <button data-f="Pendente" class="ativo" onclick="filtrar(this)">Pendentes</button>
+    <button data-f="Atendido"               onclick="filtrar(this)">Atendidos</button>
+    <button data-f="Cancelado"              onclick="filtrar(this)">Cancelados</button>
+    <button data-f="Todos"                  onclick="filtrar(this)">Todos</button>
+  </div>
+
+  <div id="loading">Carregando pedidos…</div>
+  <div id="vazio">Nenhum pedido nesta categoria.</div>
+  <div id="lista"></div>
+
+  <div class="adm-footer">
+    <button class="btn-sair" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<script>
+  // ── CONFIGURAÇÃO ───────────────────────────────────────────────
+  var SCRIPT_URL    = '';             // ← cole aqui a URL do Apps Script após publicar
+  var SENHA_CORRETA = 'dolcidri2026';
+  var AUTH_KEY      = 'dolcidri_admin_ok';
+  // ──────────────────────────────────────────────────────────────
+
+  var todosPedidos = [];
+  var filtroAtual  = 'Pendente';
+
+  // ── Autenticação ──────────────────────────────────────────────
+  function checkAuth() {
+    if (localStorage.getItem(AUTH_KEY) === '1') abrirDashboard();
+  }
+
+  function entrar() {
+    var v = document.getElementById('senha').value;
+    if (v === SENHA_CORRETA) {
+      localStorage.setItem(AUTH_KEY, '1');
+      document.getElementById('gate-erro').textContent = '';
+      abrirDashboard();
+    } else {
+      document.getElementById('gate-erro').textContent = 'Senha incorreta.';
+    }
+  }
+
+  function abrirDashboard() {
+    document.getElementById('gate').style.display      = 'none';
+    document.getElementById('dashboard').style.display = '';
+    carregarPedidos();
+  }
+
+  function sair() {
+    localStorage.removeItem(AUTH_KEY);
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('gate').style.display      = '';
+    document.getElementById('senha').value             = '';
+    document.getElementById('gate-erro').textContent   = '';
+  }
+
+  // ── Carregar pedidos via JSONP ─────────────────────────────────
+  function carregarPedidos() {
+    var loading = document.getElementById('loading');
+    var vazio   = document.getElementById('vazio');
+    document.getElementById('lista').innerHTML = '';
+    vazio.style.display   = 'none';
+    loading.style.display = '';
+
+    if (!SCRIPT_URL) {
+      loading.innerHTML = '<div class="sem-url">'
+        + '<p>Configure o <code>SCRIPT_URL</code> no topo de <code>admin.html</code></p>'
+        + '<p>após publicar o Apps Script.</p>'
+        + '<p>Veja as instruções em <code>appsscript/Code.gs</code>.</p>'
+        + '</div>';
+      return;
+    }
+
+    loading.textContent = 'Carregando pedidos…';
+
+    var cb = 'dolcidri_cb_' + Date.now();
+    window[cb] = function(data) {
+      delete window[cb];
+      todosPedidos         = data.pedidos || [];
+      loading.style.display = 'none';
+      renderizarFiltro();
+      atualizarContador();
+    };
+
+    var s   = document.createElement('script');
+    s.src   = SCRIPT_URL + '?action=listar&callback=' + cb;
+    s.onerror = function() {
+      loading.textContent = 'Erro ao carregar. Verifique o SCRIPT_URL e tente atualizar.';
+    };
+    document.head.appendChild(s);
+  }
+
+  // ── Filtros ───────────────────────────────────────────────────
+  function filtrar(btn) {
+    filtroAtual = btn.dataset.f;
+    document.querySelectorAll('#filtros button').forEach(function(b) {
+      b.classList.toggle('ativo', b === btn);
+    });
+    renderizarFiltro();
+  }
+
+  // ── Renderização ──────────────────────────────────────────────
+  function renderizarFiltro() {
+    var lista  = document.getElementById('lista');
+    var vazio  = document.getElementById('vazio');
+    var exibir = filtroAtual === 'Todos'
+      ? todosPedidos
+      : todosPedidos.filter(function(p) { return p.status === filtroAtual; });
+
+    if (exibir.length === 0) {
+      lista.innerHTML     = '';
+      vazio.style.display = '';
+    } else {
+      vazio.style.display = 'none';
+      lista.innerHTML     = exibir.map(renderCard).join('');
+    }
+  }
+
+  function esc(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderCard(p) {
+    var status = p.status || 'Pendente';
+    var id     = esc(p.id);
+    var wa     = 'https://wa.me/55' + String(p.telefone || '').replace(/\D/g, '');
+
+    var atendidoHtml = (status === 'Atendido' && p.atendidoEm)
+      ? '<div class="card-atendido-em">Atendido em: ' + esc(p.atendidoEm) + '</div>'
+      : '';
+
+    var detalhesHtml = p.detalhes
+      ? '<div class="info-row"><span class="info-label">Detalhes</span><span class="info-value">' + esc(p.detalhes) + '</span></div>'
+      : '';
+
+    return '<div class="card" id="card-' + id + '">'
+      + '<div class="card-top">'
+        + '<div>'
+          + '<div class="card-nome">' + esc(p.nome) + '</div>'
+          + '<div class="card-produto">' + esc(p.produto) + ' — ' + esc(p.quantidade) + '</div>'
+        + '</div>'
+        + '<span class="badge badge-' + esc(status) + '">' + esc(status) + '</span>'
+      + '</div>'
+      + '<div class="card-info">'
+        + '<div class="info-row"><span class="info-label">Data</span><span class="info-value">' + esc(p.data) + '</span></div>'
+        + '<div class="info-row"><span class="info-label">Entrega</span><span class="info-value">' + esc(p.entrega) + '</span></div>'
+        + '<div class="info-row"><span class="info-label">Telefone</span><span class="info-value"><a href="' + esc(wa) + '" target="_blank" rel="noopener">' + esc(p.telefone) + '</a></span></div>'
+        + detalhesHtml
+        + '<div class="info-row"><span class="info-label">Pedido em</span><span class="info-value">' + esc(p.enviado) + '</span></div>'
+      + '</div>'
+      + atendidoHtml
+      + '<div class="card-acoes">'
+        + '<button class="btn-p' + (status === 'Pendente'  ? ' sel' : '') + '" onclick="mudarStatus(\'' + id + '\',\'Pendente\')">Pendente</button>'
+        + '<button class="btn-a' + (status === 'Atendido'  ? ' sel' : '') + '" onclick="mudarStatus(\'' + id + '\',\'Atendido\')">Atendido</button>'
+        + '<button class="btn-c' + (status === 'Cancelado' ? ' sel' : '') + '" onclick="mudarStatus(\'' + id + '\',\'Cancelado\')">Cancelado</button>'
+      + '</div>'
+    + '</div>';
+  }
+
+  // ── Atualizar status ──────────────────────────────────────────
+  function mudarStatus(id, novoStatus) {
+    var pedido = null;
+    for (var i = 0; i < todosPedidos.length; i++) {
+      if (todosPedidos[i].id === id) { pedido = todosPedidos[i]; break; }
+    }
+    if (!pedido) return;
+
+    pedido.status     = novoStatus;
+    pedido.atendidoEm = novoStatus === 'Atendido' ? horaAgora() : '';
+
+    renderizarFiltro();
+    atualizarContador();
+
+    if (!SCRIPT_URL) return;
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode:   'no-cors',
+      body:   JSON.stringify({ action: 'atualizarStatus', id: id, status: novoStatus })
+    });
+  }
+
+  // ── Contador de pendentes ─────────────────────────────────────
+  function atualizarContador() {
+    var n  = 0;
+    for (var i = 0; i < todosPedidos.length; i++) {
+      if (todosPedidos[i].status === 'Pendente') n++;
+    }
+    var el = document.getElementById('adm-contador');
+    el.textContent = n === 0 ? 'Nenhum pedido pendente' : n + (n === 1 ? ' pedido pendente' : ' pedidos pendentes');
+    document.title = (n > 0 ? '(' + n + ') ' : '') + 'Admin — Dolci Dri';
+  }
+
+  function horaAgora() {
+    return new Date().toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }).replace(', ', ' ');
+  }
+
+  // ── Init ──────────────────────────────────────────────────────
+  document.getElementById('senha').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') entrar();
+  });
+  checkAuth();
+</script>
+</body>
+</html>

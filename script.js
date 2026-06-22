@@ -2,7 +2,8 @@ const siteConfig = {
   whatsappNumber: "5554994047528",
   placeholderNumber: "5500000000000",
   email: "dolcidri@gmail.com",
-  minDaysAhead: 3
+  minDaysAhead: 3,
+  appsScriptUrl: ""  // ← cole aqui a URL do Apps Script após publicar
 };
 
 const CIDADES_ENTREGA = ["gramado", "canela"];
@@ -165,6 +166,25 @@ function getAddressLine(data) {
   return "Entrega em endereço";
 }
 
+// Salvar pedido no Google Sheets via Apps Script (fire-and-forget)
+function saveOrder(data) {
+  if (!siteConfig.appsScriptUrl) return;
+  fetch(siteConfig.appsScriptUrl, {
+    method: "POST",
+    mode:   "no-cors",
+    body:   JSON.stringify({
+      action:     "novoPedido",
+      nome:       data.name,
+      telefone:   data.phone,
+      produto:    data.product,
+      quantidade: data.quantity,
+      data:       formatDateBR(data.date),
+      entrega:    getAddressLine(data),
+      detalhes:   data.notes || ""
+    })
+  });
+}
+
 // B — Limpar formulário após envio
 function resetForm() {
   orderForm.reset();
@@ -284,6 +304,7 @@ emailBtn.addEventListener("click", function () {
                    "&su=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
   window.open(gmailUrl, "_blank", "noopener,noreferrer");
   addToast("Abrindo Gmail com o pedido.", "info");
+  saveOrder(data);
   resetForm();
 });
 
@@ -323,5 +344,6 @@ orderForm.addEventListener("submit", function (event) {
     addToast("Pedido enviado para o WhatsApp!", "success");
   }
   window.open(target, "_blank", "noopener,noreferrer");
+  saveOrder(data);
   resetForm();
 });
