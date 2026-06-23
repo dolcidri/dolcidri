@@ -428,9 +428,10 @@ emailBtn.addEventListener("click", function () {
   const body     = buildEmailBody(data);
   const gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(siteConfig.email) +
                    "&su=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+  // Grava antes de abrir o Gmail (mesma razão do fluxo WhatsApp: evita perder a requisição em segundo plano).
+  saveOrder(data);
   window.open(gmailUrl, "_blank", "noopener,noreferrer");
   addToast("Abrindo Gmail com o pedido.", "info");
-  saveOrder(data);
   resetForm();
 });
 
@@ -470,6 +471,10 @@ orderForm.addEventListener("submit", function (event) {
     return;
   }
 
+  // Grava o pedido ANTES de abrir o WhatsApp: no celular o window.open joga o navegador
+  // pro fundo, e a requisição JSONP do saveOrder poderia não chegar a disparar.
+  saveOrder(data);
+
   // Abre o WhatsApp já com a mensagem preenchida (?text= em UTF-8 via encodeURIComponent — emoji passa intacto)
   window.open(
     "https://wa.me/" + siteConfig.whatsappNumber + "?text=" + encodeURIComponent(message),
@@ -478,6 +483,5 @@ orderForm.addEventListener("submit", function (event) {
   );
   addToast("WhatsApp aberto com o seu pedido. É só enviar!", "success", 5000);
 
-  saveOrder(data);
   resetForm();
 });
