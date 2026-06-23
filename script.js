@@ -8,19 +8,6 @@ const siteConfig = {
 
 const CIDADES_ENTREGA = ["gramado", "canela"];
 
-// Emojis via code points — evita problema de encoding do arquivo
-const E = {
-  cake:  "\u{1F370}", // 🍰
-  clip:  "\u{1F4CB}", // 📋
-  user:  "\u{1F464}", // 👤
-  phone: "\u{1F4F1}", // 📱
-  bday:  "\u{1F382}", // 🎂
-  num:   "\u{1F522}", // 🔢
-  cal:   "\u{1F4C5}", // 📅
-  box:   "\u{1F4E6}", // 📦
-  memo:  "\u{1F4DD}"  // 📝
-};
-
 const toastArea      = document.querySelector("#toastArea");
 const orderForm      = document.querySelector("#orderForm");
 const phoneInput     = document.querySelector("#phone");
@@ -317,25 +304,25 @@ function resetForm() {
 }
 
 
-// E — Mensagem WhatsApp com emojis via code points
+// E — Mensagem WhatsApp (sem emoji: caracteres de 4 bytes corrompem via ?text= em alguns Androids)
 function buildMessage(data) {
   const entrega = getAddressLine(data);
   const frete   = getFreteTexto(data);
   return [
-    "Olá, Dolci Dri! " + E.cake + " Quero fazer uma encomenda.",
+    "Olá, Dolci Dri! Quero fazer uma encomenda.",
     "",
-    E.clip + " *DADOS DO PEDIDO*",
-    E.user  + " Nome:          " + data.name,
-    E.phone + " Telefone:      " + data.phone,
-    E.bday  + " Produto:       " + data.product,
-    E.num   + " Quantidade:    " + data.quantity,
-    E.cal   + " Data desejada: " + formatDateBR(data.date),
-    E.box   + " Entrega:       " + entrega,
-    frete ? (E.box + " Taxa entrega:  " + frete) : null,
+    "*DADOS DO PEDIDO*",
+    "Nome: " + data.name,
+    "Telefone: " + data.phone,
+    "Produto: " + data.product,
+    "Quantidade: " + data.quantity,
+    "Data desejada: " + formatDateBR(data.date),
+    "Entrega: " + entrega,
+    frete ? ("Taxa entrega: " + frete) : null,
     "",
-    E.memo  + " Detalhes: " + (data.notes || "Sem detalhes adicionais."),
+    "Detalhes: " + (data.notes || "Sem detalhes adicionais."),
     "",
-    "─────────────────────",
+    "---------------------",
     "Pedido via dolcidri.vercel.app"
   ].filter(function (l) { return l !== null; }).join("\n");
 }
