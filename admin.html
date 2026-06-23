@@ -255,6 +255,7 @@
       margin-bottom: 14px;
     }
     .card-destaque.ok { background: linear-gradient(135deg,#e9f7ef,#ddf2e8); border-color:#c2e6d3; }
+    .card-destaque.has-frete { grid-template-columns: repeat(4, 1fr); }
     .cd-item .cd-label {
       font-size: .68rem; text-transform: uppercase; letter-spacing: .05em;
       color: var(--muted); font-weight: 800;
@@ -469,6 +470,7 @@
       .card-acoes { flex-wrap: wrap; }
       .card-acoes button { min-height: 50px; }
       .card-destaque { grid-template-columns: 1fr; }
+      .card-destaque.has-frete { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -877,9 +879,20 @@
   function renderDestaque(p, concluido) {
     var dataLabel = concluido ? 'Entregue em' : 'Data de entrega';
     var dataValue = concluido ? (soData(p.entregueEm) || soData(p.data)) : soData(p.data);
-    return '<div class="card-destaque' + (concluido ? ' ok' : '') + '">'
-      + '<div class="cd-item"><div class="cd-label">Valor do orçamento</div><div class="cd-value">' + fmtReais(p.valor) + '</div></div>'
-      + '<div class="cd-item"><div class="cd-label">' + dataLabel + '</div><div class="cd-value">' + esc(dataValue) + '</div></div>'
+
+    var temFrete = (p.frete !== '' && p.frete != null && !isNaN(parseInt(p.frete, 10)));
+    var freteC   = temFrete ? (parseInt(p.frete, 10) || 0) : 0;
+    var valorC   = parseInt(p.valor, 10) || 0;
+
+    var cols = '<div class="cd-item"><div class="cd-label">Valor do orçamento</div><div class="cd-value">' + fmtReais(p.valor) + '</div></div>';
+    if (temFrete) {
+      cols += '<div class="cd-item"><div class="cd-label">Taxa de entrega</div><div class="cd-value">' + fmtReais(freteC) + '</div></div>'
+            + '<div class="cd-item"><div class="cd-label">Valor total</div><div class="cd-value">' + fmtReais(valorC + freteC) + '</div></div>';
+    }
+    cols += '<div class="cd-item"><div class="cd-label">' + dataLabel + '</div><div class="cd-value">' + esc(dataValue) + '</div></div>';
+
+    return '<div class="card-destaque' + (concluido ? ' ok' : '') + (temFrete ? ' has-frete' : '') + '">'
+      + cols
       + '</div>';
   }
 
@@ -927,6 +940,10 @@
       ? '<div class="info-row"><span class="info-label">Taxa entrega</span><span class="info-value">' + esc(fmtReais(p.frete)) + '</span></div>'
       : '';
 
+    // Retirada no local vs. entrega em endereço — rótulo coerente com o tipo
+    var ehRetirada   = /^Retirada/i.test(String(p.entrega || ''));
+    var entregaLabel = ehRetirada ? 'Retirada' : '🚗 Entrega';
+
     // Linha de meta conforme o status
     var meta = '';
     if (status === 'Confirmado' && p.confirmadoEm)
@@ -952,7 +969,7 @@
       + destaque
       + '<div class="card-info">'
         + '<div class="info-row"><span class="info-label">Entrega em</span><span class="info-value">' + esc(soData(p.data)) + '</span></div>'
-        + '<div class="info-row"><span class="info-label">Retirada</span><span class="info-value">' + esc(p.entrega) + '</span></div>'
+        + '<div class="info-row"><span class="info-label">' + entregaLabel + '</span><span class="info-value">' + esc(p.entrega) + '</span></div>'
         + freteHtml
         + '<div class="info-row"><span class="info-label">Telefone</span><span class="info-value"><a class="wa" href="' + esc(wa) + '" target="_blank" rel="noopener">📱 ' + esc(p.telefone) + '</a></span></div>'
         + detalhesHtml
