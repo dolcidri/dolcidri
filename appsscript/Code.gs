@@ -13,6 +13,12 @@
 //     GOOGLE_MAPS_KEY = <sua chave da Google Distance Matrix API>
 // A chave fica só aqui (servidor) — nunca aparece no site. Sem a chave, o site exibe
 // "Taxa de entrega a confirmar pela Adriana" e o pedido segue normal.
+//
+// SEGURANÇA DO PAINEL (Fase 1): a listagem e as alterações de pedido exigem um TOKEN secreto.
+//   Rode UMA VEZ a função `setupAdmin` no editor (selecione no seletor de função > Executar).
+//   Ela cria, nas Propriedades do script, a senha do painel (ADMIN_SENHA) e o token (ADMIN_TOKEN),
+//   e mostra os dois no registro de execução. A senha some do código-fonte: o admin faz login
+//   pela senha e recebe o token do servidor. Sem token válido, ninguém lista nem altera pedidos.
 
 var SHEET_NAME = 'Pedidos';
 
@@ -92,6 +98,31 @@ function linhaPorId_(sh, id) {
   return -1;
 }
 
+// ── Segurança do painel (token + senha em PropertiesService) ───────────────
+// Rode UMA VEZ no editor. Cria senha e token se ainda não existirem e os mostra no log.
+function setupAdmin() {
+  var props = PropertiesService.getScriptProperties();
+  if (!props.getProperty('ADMIN_SENHA')) props.setProperty('ADMIN_SENHA', 'dolcidri2026');
+  if (!props.getProperty('ADMIN_TOKEN')) {
+    props.setProperty('ADMIN_TOKEN', (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, ''));
+  }
+  Logger.log('ADMIN_SENHA: ' + props.getProperty('ADMIN_SENHA'));
+  Logger.log('ADMIN_TOKEN: ' + props.getProperty('ADMIN_TOKEN'));
+  Logger.log('Pronto. A senha é a que a Adriana digita no painel; o token o painel recebe sozinho ao logar.');
+}
+
+function adminSenha_() { return PropertiesService.getScriptProperties().getProperty('ADMIN_SENHA'); }
+function adminToken_() { return PropertiesService.getScriptProperties().getProperty('ADMIN_TOKEN'); }
+
+// Confere o token recebido contra o guardado no servidor.
+function tokenOk_(p) {
+  var real = adminToken_();
+  return !!real && p && String(p.token) === real;
+}
+
+function onlyDigits_(v) { return String(v == null ? '' : v).replace(/\D/g, ''); }
+
+// ── Frete ──────────────────────────────────────────────────────────────────
 // Calcula a taxa de entrega: taxa = BASE + (R$/km x km de estrada), km arredondado
 // pra cima a cada 0,1 km, nunca abaixo da BASE. Distância real via Google Distance Matrix.
 // Devolve { ok, km, taxaCentavos } ou { ok:false, msg } (sem chave / fora de área / erro).
@@ -119,110 +150,156 @@ function calcularFrete_(destino) {
   return { ok: true, km: kmArred, taxaCentavos: taxa };
 }
 
-function doPost(e) {
-  try {
-    var data = JSON.parse(e.postData.contents);
-    var sh   = getSheet_();
+// ── Handlers (compartilhados por doGet e doPost) ─────────────────────────────
 
-    if (data.action === 'novoPedido') {
-      var id     = String(new Date().getTime());
-      var numero = proximoNumero_(sh);
-      sh.appendRow([
-        id, agoraBR_(),
-        data.nome, data.telefone, data.produto, data.quantidade,
-        data.data, data.entrega, data.detalhes || '',
-        'Pendente', '',
-        numero, '', '', '', ''
-      ]);
+function handleLogin_(p) {
+  var senha = adminSenha_();
+  if (!senha) return { ok: false, msg: 'Painel não configurado. Rode setupAdmin() no editor.' };
+  if (!p || String(p.senha) !== senha) return { ok: false, msg: 'Senha incorreta.' };
+  return { ok: true, token: adminToken_() };
+}
 
-    } else if (data.action === 'atualizarStatus') {
-      var r = linhaPorId_(sh, data.id);
-      if (r > 0) {
-        var st  = data.status;
-        var now = agoraBR_();
-        sh.getRange(r, C.STATUS).setValue(st);
-        if (data.data) sh.getRange(r, C.DATA).setValue(data.data);
+// Validação server-side do pedido novo (não confia só no front).
+function validarNovoPedido_(p) {
+  if (!p.nome || !String(p.nome).trim())             return 'Nome obrigatório.';
+  if (onlyDigits_(p.telefone).length < 10)           return 'Telefone inválido (mínimo 10 dígitos).';
+  if (!p.produto || !String(p.produto).trim())       return 'Produto obrigatório.';
+  if (!p.quantidade || !String(p.quantidade).trim()) return 'Quantidade obrigatória.';
+  if (!p.data || !String(p.data).trim())             return 'Data de entrega obrigatória.';
+  return null;
+}
 
-        if (st === 'Confirmado') {
-          sh.getRange(r, C.CONFIRMADO_EM).setValue(now);
-          sh.getRange(r, C.ATENDIDO_EM).setValue('');
-          sh.getRange(r, C.CANCELADO_EM).setValue('');
-          sh.getRange(r, C.ENTREGUE_EM).setValue('');
-          if (data.valor !== undefined && data.valor !== null && data.valor !== '') {
-            sh.getRange(r, C.VALOR).setValue(data.valor);
-          }
-        } else if (st === 'Atendido') {
-          sh.getRange(r, C.ATENDIDO_EM).setValue(now);
-          sh.getRange(r, C.CANCELADO_EM).setValue('');
-          sh.getRange(r, C.ENTREGUE_EM).setValue(data.entregueEm || '');
-        } else if (st === 'Cancelado') {
-          sh.getRange(r, C.CANCELADO_EM).setValue(now);
-          sh.getRange(r, C.ATENDIDO_EM).setValue('');
-          sh.getRange(r, C.ENTREGUE_EM).setValue('');
-        } else if (st === 'Pendente') {
-          sh.getRange(r, C.CONFIRMADO_EM).setValue('');
-          sh.getRange(r, C.ATENDIDO_EM).setValue('');
-          sh.getRange(r, C.CANCELADO_EM).setValue('');
-          sh.getRange(r, C.ENTREGUE_EM).setValue('');
-          sh.getRange(r, C.VALOR).setValue('');
-        }
-      }
-
-    } else if (data.action === 'definirValor') {
-      var rv = linhaPorId_(sh, data.id);
-      if (rv > 0) {
-        sh.getRange(rv, C.VALOR).setValue(data.valor || '');
-        if (data.data) sh.getRange(rv, C.DATA).setValue(data.data);
-      }
+// Dedup anti-duplo-clique: mesmo nome+telefone+produto+data enviados no MESMO minuto.
+// Devolve o número do pedido já gravado, ou null se não houver duplicata.
+function pedidoDuplicado_(sh, p) {
+  var rows  = sh.getDataRange().getValues();
+  var agora = agoraBR_(); // resolução de minuto
+  var tel   = onlyDigits_(p.telefone);
+  for (var i = rows.length - 1; i >= 1 && i >= rows.length - 30; i--) {
+    var r = rows[i];
+    if (String(r[C.ENVIADO - 1]) !== agora) continue;
+    if (onlyDigits_(r[C.TELEFONE - 1]) === tel
+        && String(r[C.PRODUTO - 1]) === String(p.produto)
+        && String(r[C.DATA - 1])    === String(p.data)
+        && String(r[C.NOME - 1])    === String(p.nome)) {
+      return r[C.NUMERO - 1] || 0;
     }
+  }
+  return null;
+}
 
-    return ContentService.createTextOutput('ok')
-      .setMimeType(ContentService.MimeType.TEXT);
+function handleNovoPedido_(p) {
+  var erro = validarNovoPedido_(p);
+  if (erro) return { ok: false, msg: erro };
 
-  } catch (err) {
-    return ContentService.createTextOutput('erro: ' + err.message)
-      .setMimeType(ContentService.MimeType.TEXT);
+  // LockService serializa a numeração + gravação: sem corrida de número nem duplo append.
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); }
+  catch (e) { return { ok: false, msg: 'Servidor ocupado, tente novamente.' }; }
+
+  try {
+    var sh  = getSheet_();
+    var dup = pedidoDuplicado_(sh, p);
+    if (dup !== null) return { ok: true, numero: dup, duplicado: true };
+
+    var id     = String(new Date().getTime());
+    var numero = proximoNumero_(sh);
+    sh.appendRow([
+      id, agoraBR_(),
+      p.nome, p.telefone, p.produto, p.quantidade,
+      p.data, p.entrega, p.detalhes || '',
+      'Pendente', '',
+      numero, '', '', '', ''
+    ]);
+    SpreadsheetApp.flush();
+    return { ok: true, numero: numero };
+  } finally {
+    lock.releaseLock();
   }
 }
 
-function doGet(e) {
-  var action   = e.parameter.action;
-  var callback = e.parameter.callback;
-  var result   = {};
+function handleAtualizarStatus_(p) {
+  var sh = getSheet_();
+  var r  = linhaPorId_(sh, p.id);
+  if (r <= 0) return { ok: false, msg: 'Pedido não encontrado.' };
 
-  if (action === 'listar') {
-    var sh   = getSheet_();
-    var rows = sh.getDataRange().getValues();
-    var pedidos = [];
-    for (var i = 1; i < rows.length; i++) {
-      var r = rows[i];
-      if (!r[C.ID - 1]) continue;
-      pedidos.push({
-        id:           String(r[C.ID - 1]),
-        numero:       r[C.NUMERO - 1],
-        enviado:      r[C.ENVIADO - 1],
-        nome:         r[C.NOME - 1],
-        telefone:     r[C.TELEFONE - 1],
-        produto:      r[C.PRODUTO - 1],
-        quantidade:   r[C.QUANTIDADE - 1],
-        data:         r[C.DATA - 1],
-        entrega:      r[C.ENTREGA - 1],
-        detalhes:     r[C.DETALHES - 1],
-        status:       r[C.STATUS - 1],
-        valor:        r[C.VALOR - 1],
-        confirmadoEm: r[C.CONFIRMADO_EM - 1],
-        atendidoEm:   r[C.ATENDIDO_EM - 1],
-        canceladoEm:  r[C.CANCELADO_EM - 1],
-        entregueEm:   r[C.ENTREGUE_EM - 1]
-      });
+  var st  = p.status;
+  var now = agoraBR_();
+  sh.getRange(r, C.STATUS).setValue(st);
+  if (p.data) sh.getRange(r, C.DATA).setValue(p.data);
+
+  if (st === 'Confirmado') {
+    sh.getRange(r, C.CONFIRMADO_EM).setValue(now);
+    sh.getRange(r, C.ATENDIDO_EM).setValue('');
+    sh.getRange(r, C.CANCELADO_EM).setValue('');
+    sh.getRange(r, C.ENTREGUE_EM).setValue('');
+    if (p.valor !== undefined && p.valor !== null && p.valor !== '') {
+      sh.getRange(r, C.VALOR).setValue(p.valor);
     }
-    pedidos.reverse(); // mais recente primeiro
-    result = { pedidos: pedidos };
-
-  } else if (action === 'frete') {
-    result = calcularFrete_(e.parameter.destino);
+  } else if (st === 'Atendido') {
+    sh.getRange(r, C.ATENDIDO_EM).setValue(now);
+    sh.getRange(r, C.CANCELADO_EM).setValue('');
+    sh.getRange(r, C.ENTREGUE_EM).setValue(p.entregueEm || '');
+  } else if (st === 'Cancelado') {
+    sh.getRange(r, C.CANCELADO_EM).setValue(now);
+    sh.getRange(r, C.ATENDIDO_EM).setValue('');
+    sh.getRange(r, C.ENTREGUE_EM).setValue('');
+  } else if (st === 'Pendente') {
+    sh.getRange(r, C.CONFIRMADO_EM).setValue('');
+    sh.getRange(r, C.ATENDIDO_EM).setValue('');
+    sh.getRange(r, C.CANCELADO_EM).setValue('');
+    sh.getRange(r, C.ENTREGUE_EM).setValue('');
+    sh.getRange(r, C.VALOR).setValue('');
   }
+  SpreadsheetApp.flush();
+  return { ok: true };
+}
 
+function handleDefinirValor_(p) {
+  var sh = getSheet_();
+  var rv = linhaPorId_(sh, p.id);
+  if (rv <= 0) return { ok: false, msg: 'Pedido não encontrado.' };
+  sh.getRange(rv, C.VALOR).setValue(p.valor || '');
+  if (p.data) sh.getRange(rv, C.DATA).setValue(p.data);
+  SpreadsheetApp.flush();
+  return { ok: true };
+}
+
+function handleListar_() {
+  var sh   = getSheet_();
+  var rows = sh.getDataRange().getValues();
+  var pedidos = [];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    if (!r[C.ID - 1]) continue;
+    pedidos.push({
+      id:           String(r[C.ID - 1]),
+      numero:       r[C.NUMERO - 1],
+      enviado:      r[C.ENVIADO - 1],
+      nome:         r[C.NOME - 1],
+      telefone:     r[C.TELEFONE - 1],
+      produto:      r[C.PRODUTO - 1],
+      quantidade:   r[C.QUANTIDADE - 1],
+      data:         r[C.DATA - 1],
+      entrega:      r[C.ENTREGA - 1],
+      detalhes:     r[C.DETALHES - 1],
+      status:       r[C.STATUS - 1],
+      valor:        r[C.VALOR - 1],
+      confirmadoEm: r[C.CONFIRMADO_EM - 1],
+      atendidoEm:   r[C.ATENDIDO_EM - 1],
+      canceladoEm:  r[C.CANCELADO_EM - 1],
+      entregueEm:   r[C.ENTREGUE_EM - 1]
+    });
+  }
+  pedidos.reverse(); // mais recente primeiro
+  return { ok: true, pedidos: pedidos };
+}
+
+// ── Roteamento ───────────────────────────────────────────────────────────────
+// Tudo passa por GET + JSONP para que o front consiga LER a resposta (Apps Script não
+// expõe CORS p/ POST). Assim toda gravação é confirmável — fim do "salvou?" no escuro.
+
+function responder_(result, callback) {
   var json = JSON.stringify(result);
   if (callback) {
     return ContentService
@@ -231,4 +308,48 @@ function doGet(e) {
   }
   return ContentService.createTextOutput(json)
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  var p      = (e && e.parameter) || {};
+  var action = p.action;
+  var result;
+
+  if (action === 'frete') {
+    result = calcularFrete_(p.destino);          // público (site do cliente)
+  } else if (action === 'novoPedido') {
+    result = handleNovoPedido_(p);               // público (site do cliente)
+  } else if (action === 'login') {
+    result = handleLogin_(p);                     // público: troca senha por token
+  } else if (action === 'listar') {
+    result = tokenOk_(p) ? handleListar_()           : { ok: false, erro: 'NAO_AUTORIZADO' };
+  } else if (action === 'atualizarStatus') {
+    result = tokenOk_(p) ? handleAtualizarStatus_(p) : { ok: false, erro: 'NAO_AUTORIZADO' };
+  } else if (action === 'definirValor') {
+    result = tokenOk_(p) ? handleDefinirValor_(p)    : { ok: false, erro: 'NAO_AUTORIZADO' };
+  } else {
+    result = { ok: false, msg: 'Ação desconhecida.' };
+  }
+
+  return responder_(result, p.callback);
+}
+
+// Compatibilidade: clientes antigos que ainda mandam POST (no-cors, resposta opaca).
+// novoPedido segue aberto; mutações do painel exigem token.
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    if (data.action === 'novoPedido') {
+      handleNovoPedido_(data);
+    } else if (data.action === 'atualizarStatus') {
+      if (tokenOk_(data)) handleAtualizarStatus_(data);
+    } else if (data.action === 'definirValor') {
+      if (tokenOk_(data)) handleDefinirValor_(data);
+    }
+    return ContentService.createTextOutput('ok')
+      .setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput('erro: ' + err.message)
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
 }

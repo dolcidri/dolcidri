@@ -7,7 +7,8 @@ Painel administrativo (`admin.html`) para acompanhar e gerenciar os pedidos que 
 - Lista todos os pedidos cadastrados (mais recentes primeiro), com filtro por status.
 - Permite avançar/recuar o status de cada pedido seguindo um fluxo de negócio definido.
 - Cada pedido tem **número sequencial** (`#001`) e, quando confirmado, **valor de orçamento** e **data de entrega** em destaque.
-- Acesso protegido por senha simples (gate client-side, `localStorage`).
+- **Busca** por nome, telefone ou nº do pedido (varre todos os status) e **visões por data de entrega** (Hoje / Atrasados / 7 dias).
+- Acesso protegido por **senha + token de servidor** (ver "Segurança" abaixo) — a listagem e as alterações exigem token válido.
 
 ## Fluxo de status (regra de negócio)
 
@@ -73,37 +74,61 @@ Colunas (na ordem da planilha). As 4 últimas foram **acrescentadas ao fim** —
 | 13 | Valor (centavos) | definido ao confirmar |
 | 14 | Confirmado em | carimbo ao confirmar |
 | 15 | Cancelado em | carimbo ao cancelar |
+| 16 | Entregue em (efetiva) | data da entrega efetiva (DD/MM/AAAA) |
 
-## Ações do backend (`doPost` em `Code.gs`)
+## Segurança (Fase 1)
 
-| `action` | Efeito |
-|---|---|
-| `novoPedido` | Acrescenta linha com `Pendente` + número sequencial |
-| `atualizarStatus` | Grava status + carimbo da transição; ao Confirmar, grava o `valor`; ao voltar a Pendente, zera valor/carimbos |
-| `definirValor` | Atualiza só o valor (Editar valor) |
+> **Princípio:** acesso o mais seguro possível dentro de um site estático + Apps Script. Listagem e mutações exigem um **token secreto** guardado **só no servidor** (PropertiesService); a senha **saiu do código-fonte**.
 
-`doGet?action=listar` devolve todos os campos (incl. `numero`, `valor`, `confirmadoEm`, `canceladoEm`).
+- **Sem senha no código.** A Adriana digita a senha no painel; ela é enviada ao backend (`action=login`), que compara com `ADMIN_SENHA` e devolve o **`ADMIN_TOKEN`**. O painel guarda o token no `localStorage` e o envia em toda listagem/mutação. Quem não tem a senha não obtém o token e não lista/altera nada.
+- **`listar`, `atualizarStatus`, `definirValor` exigem `token`** válido — sem ele o backend responde `{ ok:false, erro:'NAO_AUTORIZADO' }` e o painel volta ao login. (`frete`, `novoPedido` e `login` seguem públicos — são do site do cliente.)
+- **Gravação confirmável (fim do silent-failure):** tudo passa por **GET + JSONP**, que **lê a resposta** (o POST `no-cors` antigo não lia). Se o servidor recusar/falhar, o painel mostra erro e **re-sincroniza** (`carregarPedidos()`) — nada some com toast verde mentiroso.
+- **`LockService` + dedup:** `novoPedido` roda sob trava de script (sem corrida de número) e ignora duplo-clique (mesmo nome+telefone+produto+data no mesmo minuto → devolve o nº já gravado).
+- **Validação server-side:** `validarNovoPedido_` rejeita nome/telefone(<10 díg.)/produto/quantidade/data ausentes — não confia só no front.
+
+### Setup do token (uma vez, no editor do Apps Script)
+
+1. `script.google.com` (conta `dolcidri@gmail.com`) → projeto Dolci Dri.
+2. Selecione a função **`setupAdmin`** no seletor → **Executar** (aceite a autorização se pedir).
+3. O **registro de execução** mostra `ADMIN_SENHA` e `ADMIN_TOKEN`. A senha padrão é `dolcidri2026` — troque depois em **Propriedades do script** se quiser. O token o painel obtém sozinho ao logar; não precisa copiá-lo.
+4. **Reimplante** o `Code.gs` (Nova versão) — necessário porque o front novo chama `action=login`, que o backend antigo não tem.
+
+## Ações do backend (`doGet` + JSONP em `Code.gs`)
+
+| `action` | Token? | Efeito |
+|---|---|---|
+| `login` | — | Troca senha por token (`{ ok, token }` ou `{ ok:false, msg }`) |
+| `listar` | ✅ | Devolve todos os campos (incl. `numero`, `valor`, `confirmadoEm`, `canceladoEm`, `entregueEm`) |
+| `novoPedido` | — | Valida → LockService → dedup → acrescenta linha `Pendente` + número sequencial; devolve `{ ok, numero }` |
+| `atualizarStatus` | ✅ | Grava status + carimbo da transição; ao Confirmar grava o `valor`; ao voltar a Pendente zera valor/carimbos |
+| `definirValor` | ✅ | Atualiza só o valor (Editar valor) |
+| `frete` | — | Taxa de entrega (ver `docs/TAXA-ENTREGA.md`) |
+
+`doPost` permanece como **compatibilidade** (clientes antigos em `no-cors`): `novoPedido` aberto, mutações exigem token.
 
 ## Comportamento da UI
 
-- **Otimista**: a troca de status atualiza a tela na hora (com carimbo local) e dispara o POST `no-cors` em paralelo. Como `no-cors` não lê resposta, o número de novos pedidos só aparece após **Atualizar**.
+- **Otimista + confirmado:** a troca de status atualiza a tela na hora e dispara o JSONP em paralelo; se o servidor recusar, mostra erro e recarrega a verdade. Novos pedidos do site aparecem após **Atualizar**.
 - Feedback exclusivamente via **Toast** (sucesso/aviso/erro) e **modais** — sem `alert/confirm/prompt` nativos.
 - Modais com estrutura header fixo + body rolável + footer fixo (`max-height: 90vh`), `z-index 10000`.
-- Filtros sticky com contadores por status; título da aba mostra `(N)` pendentes.
+- Filtros sticky (com **quebra de linha** — todos os chips sempre visíveis) e contadores por status; título da aba mostra `(N)` pendentes / `⚠️` atrasados.
 
 ## Configuração (`admin.html`)
 
 ```js
-var SCRIPT_URL    = 'https://script.google.com/macros/s/.../exec';
-var SENHA_CORRETA = 'dolcidri2026';   // gate client-side
-var AUTH_KEY      = 'dolcidri_admin_ok';
+var SCRIPT_URL = 'https://script.google.com/macros/s/.../exec';
+var AUTH_KEY   = 'dolcidri_admin_ok';   // flag "logado" no localStorage
+var TOKEN_KEY  = 'dolcidri_token';      // token recebido do servidor no login
+// A senha NÃO fica aqui — vive em PropertiesService (ADMIN_SENHA), conferida no backend.
 ```
 
 ## Troubleshooting
 
-- **Pedidos sem número/valor após atualizar o `Code.gs`** → o Apps Script não atualiza sozinho. Reimplantar: `script.google.com` (conta `dolcidri@gmail.com`) → colar o `Code.gs` → **Gerenciar implantações → Editar → Nova versão → Implantar** (manter a mesma URL).
-- **"Erro ao carregar"** → conferir `SCRIPT_URL` e se a implantação está com acesso "Qualquer pessoa".
-- **Troca de status não persiste** → POST é `no-cors` (sem leitura de resposta); o toast de erro só dispara em falha de rede. Use **Atualizar** para conferir o estado real na planilha.
+- **Não loga / "Não foi possível verificar a senha"** → rodar `setupAdmin` no editor e **reimplantar** o `Code.gs` (o backend precisa ter a ação `login`).
+- **"Sessão expirada. Entre novamente."** → o token guardado não bate com o do servidor (token regenerado, ou backend não reimplantado). Logar de novo; se persistir, conferir `ADMIN_TOKEN` nas Propriedades do script.
+- **Pedidos sem número/valor após atualizar o `Code.gs`** → o Apps Script não atualiza sozinho. Reimplantar: `script.google.com` → colar o `Code.gs` → **Gerenciar implantações → Editar → Nova versão → Implantar** (manter a mesma URL).
+- **"Erro ao carregar"** → conferir `SCRIPT_URL`, se a implantação está com acesso "Qualquer pessoa" e se há token (logar de novo).
+- **Alteração não persiste** → agora o painel **avisa** em caso de falha e recarrega; conferir na planilha. Falha recorrente = backend não reimplantado ou token inválido.
 - **Data aparecendo um dia errado** → não deveria ocorrer: `soData()` fatia a porção de calendário. Se ocorrer, verificar o fuso da planilha em Arquivo → Configurações.
 
 ## Dependências externas

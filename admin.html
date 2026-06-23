@@ -83,7 +83,7 @@
     #gate-erro { color: var(--red); font-size: 0.9rem; min-height: 1.2em; font-weight: 600; }
 
     /* ── DASHBOARD ── */
-    #dashboard { display: none; max-width: 700px; margin: 0 auto; padding: 0 16px 64px; }
+    #dashboard { display: none; max-width: 920px; margin: 0 auto; padding: 0 16px 64px; }
 
     .adm-header {
       display: flex;
@@ -125,12 +125,10 @@
     }
     #filtros {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
-      overflow-x: auto;
       padding-bottom: 2px;
-      scrollbar-width: none;
     }
-    #filtros::-webkit-scrollbar { display: none; }
     #filtros button {
       min-height: 40px;
       padding: 0 16px;
@@ -474,13 +472,41 @@
 
 <script>
   // ── CONFIGURAÇÃO ───────────────────────────────────────────────
-  var SCRIPT_URL    = 'https://script.google.com/macros/s/AKfycbySJRsCP_uKNY5XgtdrP5KKY_e4hcNU-2Ka5D4XzJ4KKB6Z23hvM3eRBmJqTBYVl7ohbw/exec';
-  var SENHA_CORRETA = 'dolcidri2026';
-  var AUTH_KEY      = 'dolcidri_admin_ok';
+  var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySJRsCP_uKNY5XgtdrP5KKY_e4hcNU-2Ka5D4XzJ4KKB6Z23hvM3eRBmJqTBYVl7ohbw/exec';
+  var AUTH_KEY   = 'dolcidri_admin_ok';
+  var TOKEN_KEY  = 'dolcidri_token';
+  // A senha NÃO fica no código: o login a envia ao servidor e recebe de volta o token
+  // de acesso (guardado em PropertiesService). Sem token válido, nada é listado ou alterado.
   // ──────────────────────────────────────────────────────────────
 
   var todosPedidos = [];
   var filtroAtual  = 'Pendente';
+  var adminToken   = '';
+
+  // JSONP: o Apps Script (doGet) responde com callback(...) — contorna o CORS do GET
+  // e, ao contrário do POST no-cors, deixa LER a resposta (gravação confirmável).
+  function jsonp(url, cb) {
+    var name = '__admCb' + Date.now() + Math.floor(Math.random() * 1e4);
+    var s = document.createElement('script');
+    window[name] = function (data) { delete window[name]; s.remove(); cb(data); };
+    s.onerror = function () { delete window[name]; s.remove(); cb(null); };
+    s.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + name;
+    document.body.appendChild(s);
+  }
+
+  // Monta querystring a partir de um objeto (já injeta o token de acesso).
+  function comToken(params) {
+    params.token = adminToken;
+    return SCRIPT_URL + '?' + Object.keys(params).map(function (k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+  }
+
+  // Sessão expirou/sem token no servidor → volta ao login.
+  function sessaoInvalida() {
+    toast('Sessão expirada. Entre novamente.', 'error', 5000);
+    sair();
+  }
 
   // ── Helpers ───────────────────────────────────────────────────
   function el(id) { return document.getElementById(id); }
@@ -647,18 +673,30 @@
 
   // ── Autenticação ──────────────────────────────────────────────
   function checkAuth() {
-    if (localStorage.getItem(AUTH_KEY) === '1') abrirDashboard();
+    var t = localStorage.getItem(TOKEN_KEY);
+    if (localStorage.getItem(AUTH_KEY) === '1' && t) {
+      adminToken = t;
+      abrirDashboard();
+    }
   }
   function entrar() {
     var v = el('senha').value;
-    if (v === SENHA_CORRETA) {
-      localStorage.setItem(AUTH_KEY, '1');
-      el('gate-erro').textContent = '';
-      abrirDashboard();
-    } else {
-      el('gate-erro').textContent = 'Senha incorreta.';
-      toast('Senha incorreta.', 'error');
-    }
+    if (!v) { el('gate-erro').textContent = 'Digite a senha.'; return; }
+    el('gate-erro').textContent = 'Verificando…';
+    jsonp(SCRIPT_URL + '?action=login&senha=' + encodeURIComponent(v), function (res) {
+      if (res && res.ok && res.token) {
+        adminToken = res.token;
+        localStorage.setItem(TOKEN_KEY, res.token);
+        localStorage.setItem(AUTH_KEY, '1');
+        el('gate-erro').textContent = '';
+        el('senha').value = '';
+        abrirDashboard();
+      } else {
+        var msg = (res && res.msg) ? res.msg : 'Não foi possível verificar a senha.';
+        el('gate-erro').textContent = msg;
+        toast(msg, 'error');
+      }
+    });
   }
   function abrirDashboard() {
     el('gate').style.display = 'none';
@@ -667,6 +705,8 @@
   }
   function sair() {
     localStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    adminToken = '';
     el('dashboard').style.display = 'none';
     el('gate').style.display = '';
     el('senha').value = '';
@@ -690,19 +730,19 @@
       return;
     }
 
-    fetch(SCRIPT_URL + '?action=listar')
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        todosPedidos = data.pedidos || [];
-        loading.style.display = 'none';
-        renderizarFiltro();
-        atualizarContadores();
-      })
-      .catch(function () {
-        loading.textContent = 'Erro ao carregar. Verifique o SCRIPT_URL e tente atualizar.';
+    jsonp(comToken({ action: 'listar' }), function (data) {
+      if (btn) btn.classList.remove('girando');
+      if (data && data.erro === 'NAO_AUTORIZADO') { sessaoInvalida(); return; }
+      if (!data || !data.pedidos) {
+        loading.textContent = 'Erro ao carregar. Tente atualizar.';
         toast('Não foi possível carregar os pedidos.', 'error');
-      })
-      .finally(function () { if (btn) btn.classList.remove('girando'); });
+        return;
+      }
+      todosPedidos = data.pedidos || [];
+      loading.style.display = 'none';
+      renderizarFiltro();
+      atualizarContadores();
+    });
   }
 
   // ── Filtros ───────────────────────────────────────────────────
@@ -1042,8 +1082,13 @@
     if (valorCentavos != null) body.valor = valorCentavos;
     if (dataBR) body.data = dataBR;
     if (entregueBR) body.entregueEm = entregueBR;
-    fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(body) })
-      .catch(function () { toast('Falha ao salvar no servidor. Atualize para conferir.', 'error', 5000); });
+    jsonp(comToken(body), function (res) {
+      if (res && res.erro === 'NAO_AUTORIZADO') { sessaoInvalida(); return; }
+      if (!res || !res.ok) {
+        toast('Falha ao salvar a alteração' + ((res && res.msg) ? ' (' + res.msg + ')' : '') + '. Recarregando…', 'error', 5000);
+        carregarPedidos(); // re-sincroniza com a verdade do servidor
+      }
+    });
   }
 
   function definirValor(id, valorCentavos, dataBR) {
@@ -1057,8 +1102,13 @@
     if (!SCRIPT_URL) return;
     var body = { action: 'definirValor', id: id, valor: valorCentavos };
     if (dataBR) body.data = dataBR;
-    fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(body) })
-      .catch(function () { toast('Falha ao salvar.', 'error'); });
+    jsonp(comToken(body), function (res) {
+      if (res && res.erro === 'NAO_AUTORIZADO') { sessaoInvalida(); return; }
+      if (!res || !res.ok) {
+        toast('Falha ao salvar o valor' + ((res && res.msg) ? ' (' + res.msg + ')' : '') + '. Recarregando…', 'error', 5000);
+        carregarPedidos();
+      }
+    });
   }
 
   // ── Init ──────────────────────────────────────────────────────

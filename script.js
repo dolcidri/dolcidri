@@ -271,22 +271,36 @@ function getFreteTexto(data) {
   return "R$ " + centavosParaBR(freteCentavosAtual) + " (estimada)";
 }
 
-// Salvar pedido no Google Sheets via Apps Script (fire-and-forget)
+// Salvar pedido no Google Sheets via Apps Script.
+// Usa JSONP (GET) para LER a resposta — gravação confirmável (fim do "salvou?" no escuro).
+let salvandoPedido = false;
 function saveOrder(data) {
   if (!siteConfig.appsScriptUrl) return;
-  fetch(siteConfig.appsScriptUrl, {
-    method: "POST",
-    mode:   "no-cors",
-    body:   JSON.stringify({
-      action:     "novoPedido",
-      nome:       data.name,
-      telefone:   data.phone,
-      produto:    data.product,
-      quantidade: data.quantity,
-      data:       formatDateBR(data.date),
-      entrega:    getAddressLine(data),
-      detalhes:   data.notes || ""
-    })
+  if (salvandoPedido) return; // trava anti-duplo-envio (o backend ainda deduplica por segurança)
+  salvandoPedido = true;
+
+  const params = {
+    action:     "novoPedido",
+    nome:       data.name,
+    telefone:   data.phone,
+    produto:    data.product,
+    quantidade: data.quantity,
+    data:       formatDateBR(data.date),
+    entrega:    getAddressLine(data),
+    detalhes:   data.notes || ""
+  };
+  const qs = Object.keys(params)
+    .map((k) => encodeURIComponent(k) + "=" + encodeURIComponent(params[k]))
+    .join("&");
+
+  jsonp(siteConfig.appsScriptUrl + "?" + qs, function (res) {
+    salvandoPedido = false;
+    if (res && res.ok) {
+      const num = res.numero ? " (#" + String(res.numero).padStart(3, "0") + ")" : "";
+      addToast("Pedido registrado com a Adriana" + num + ".", "success", 4200);
+    } else {
+      addToast("Não consegui registrar o pedido aqui — finalize pelo WhatsApp/e-mail aberto.", "warning", 6000);
+    }
   });
 }
 
