@@ -102,10 +102,36 @@ pedido segue normalmente — não trava o fluxo.
 
 | Sintoma | Causa provável | Ação |
 |---|---|---|
+| Sempre "a confirmar" p/ **todos** os endereços (inclusive os próprios) | escopo `script.external_request` **não autorizado** — reimplantar **não** concede autorização (ver "Autorização do UrlFetchApp" abaixo) | rodar uma função no editor e aceitar a permissão "Conectar-se a serviço externo" |
 | Sempre "a confirmar pela Adriana" | `GOOGLE_MAPS_KEY` ausente ou Distance Matrix API desativada | cadastrar a chave / ativar a API |
 | "a confirmar" só p/ alguns endereços | endereço não geocodificado (`ZERO_RESULTS`/`NOT_FOUND`) | conferir CEP/número; é fallback seguro |
 | Taxa não aparece após mudar valor no `Code.gs` | Apps Script não reimplantado | Gerenciar implantações → Nova versão |
 | Taxa não recalcula ao trocar número | gatilho é `change` (blur) | clicar fora do campo número |
+
+### ⚠️ Autorização do `UrlFetchApp` (pegadinha — resolvido em 22/06/2026)
+
+O frete foi o **primeiro** recurso a fazer chamada HTTP externa (`UrlFetchApp.fetch`). Isso exige
+um **escopo OAuth novo** (`https://www.googleapis.com/auth/script.external_request`) que o projeto
+nunca tinha. **Reimplantar não concede esse escopo** — ele só é concedido quando se **executa uma
+função no editor** e se aceita a tela "Autorização necessária".
+
+Sintoma exato: bater no endpoint retornava **HTML de erro** (não JSON):
+`Exception: Você não tem permissão para chamar UrlFetchApp.fetch` — e o site, recebendo lixo no
+lugar de JSON, caía no fallback *"a confirmar pela Adriana"* para **todos** os endereços.
+
+**Como conceder a autorização** (só precisa uma vez por projeto):
+1. Editor do Apps Script → criar/usar uma função **sem** underscore que chame o frete (o editor
+   novo **esconde do seletor** funções terminadas em `_`, como `calcularFrete_`):
+   ```javascript
+   function testarFrete() {
+     Logger.log(calcularFrete_('Avenida Borges de Medeiros, 1000, Centro, Gramado, RS, Brasil'));
+   }
+   ```
+2. Salvar → selecionar `testarFrete` no seletor → **Executar**.
+3. **"Autorização necessária"** → Revisar permissões → conta `dolcidri@gmail.com` → Avançado →
+   "Acessar Dolci Dri (não seguro)" → **Permitir**.
+4. O registro deve mostrar `{ok=true, km=..., taxaCentavos=...}`. Pronto — vale para a URL pública
+   na hora (web app roda "como eu"), sem reimplantar.
 
 ## Custo da API Google (na prática: R$ 0 para a Dolci Dri)
 
