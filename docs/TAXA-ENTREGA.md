@@ -107,8 +107,38 @@ pedido segue normalmente — não trava o fluxo.
 | Taxa não aparece após mudar valor no `Code.gs` | Apps Script não reimplantado | Gerenciar implantações → Nova versão |
 | Taxa não recalcula ao trocar número | gatilho é `change` (blur) | clicar fora do campo número |
 
+## Custo da API Google (na prática: R$ 0 para a Dolci Dri)
+
+O Google cobra por **element** = 1 origem × 1 destino. No nosso uso **cada cálculo de
+frete = 1 element** (a base × 1 endereço do cliente).
+
+| Faixa mensal | Preço |
+|---|---|
+| **Até 5.000 elements/mês** | **Grátis** (cota mensal gratuita) |
+| 5.001 – 100.000 | US$ 10,00 / 1.000 elements |
+| Acima de 100.000 | US$ 8,00 / 1.000 elements |
+
+Além da cota gratuita, contas Google Maps Platform ainda têm um **crédito mensal de
+US$ 200** que abate o uso.
+
+**Dimensionamento Dolci Dri:** mesmo num cenário folgado de ~300 pedidos/mês, isso é ~6%
+da cota gratuita (300 de 5.000) → **fica de graça, sem encostar no crédito de US$ 200**.
+Só passaria a custar acima de 5.000 cálculos/mês — irreal para a confeitaria.
+
+⚠️ **Dois cuidados ao ativar:**
+1. **Exige cartão de crédito** cadastrado no Google Cloud para habilitar a API (mesmo no
+   tier gratuito). Dentro da cota não cobra nada, mas o billing precisa existir.
+2. **Restringir a chave** (Google Cloud → Credenciais → restringir por API: só Distance
+   Matrix). A chave já fica escondida no Apps Script (`PropertiesService`), mas restringir
+   evita surpresa caso vaze.
+
+> **Nota de futuro:** o Google marcou a Distance Matrix como **Legacy** e recomenda migrar
+> para a **Routes API** (Compute Route Matrix). Por ora a Distance Matrix funciona normalmente
+> e é mais simples; migração fica como ajuste futuro do `Code.gs`, sem pressa.
+
 ## Dependências
 
-- **Google Distance Matrix API** (Google Cloud, cobrança por uso — cota gratuita mensal).
+- **Google Distance Matrix API** (Google Cloud, cobrança por uso — cota gratuita mensal de
+  5.000 elements; ver seção "Custo da API Google" acima).
 - **Apps Script** (mesmo backend dos pedidos) — ver `docs/PAINEL-PEDIDOS.md`.
 - Front estático no Vercel (deploy automático no push ao `main`).
