@@ -287,7 +287,9 @@ function saveOrder(data) {
     quantidade: data.quantity,
     data:       formatDateBR(data.date),
     entrega:    getAddressLine(data),
-    detalhes:   data.notes || ""
+    detalhes:   data.notes || "",
+    // Taxa de entrega estimada (centavos) calculada no momento do pedido — antes era descartada.
+    frete:      (data.delivery === "Entrega em endereço" && freteCentavosAtual != null) ? freteCentavosAtual : ""
   };
   const qs = Object.keys(params)
     .map((k) => encodeURIComponent(k) + "=" + encodeURIComponent(params[k]))

@@ -8,6 +8,9 @@ Painel administrativo (`admin.html`) para acompanhar e gerenciar os pedidos que 
 - Permite avançar/recuar o status de cada pedido seguindo um fluxo de negócio definido.
 - Cada pedido tem **número sequencial** (`#001`) e, quando confirmado, **valor de orçamento** e **data de entrega** em destaque.
 - **Busca** por nome, telefone ou nº do pedido (varre todos os status) e **visões por data de entrega** (Hoje / Atrasados / 7 dias).
+- **Editar dados** de qualquer pedido (nome, telefone, produto, quantidade, entrega, detalhes) — conserta cadastros errados.
+- **Faturamento por período** (botão "📊 Caixa"): soma o que foi entregue e o que está a receber.
+- **Taxa de entrega** calculada no site é **persistida** no pedido e exibida no card.
 - Acesso protegido por **senha + token de servidor** (ver "Segurança" abaixo) — a listagem e as alterações exigem token válido.
 
 ## Fluxo de status (regra de negócio)
@@ -75,6 +78,7 @@ Colunas (na ordem da planilha). As 4 últimas foram **acrescentadas ao fim** —
 | 14 | Confirmado em | carimbo ao confirmar |
 | 15 | Cancelado em | carimbo ao cancelar |
 | 16 | Entregue em (efetiva) | data da entrega efetiva (DD/MM/AAAA) |
+| 17 | Frete (centavos) | taxa de entrega estimada no momento do pedido (vazio em retirada) |
 
 ## Segurança (Fase 1)
 
@@ -102,7 +106,21 @@ Colunas (na ordem da planilha). As 4 últimas foram **acrescentadas ao fim** —
 | `novoPedido` | — | Valida → LockService → dedup → acrescenta linha `Pendente` + número sequencial; devolve `{ ok, numero }` |
 | `atualizarStatus` | ✅ | Grava status + carimbo da transição; ao Confirmar grava o `valor`; ao voltar a Pendente zera valor/carimbos |
 | `definirValor` | ✅ | Atualiza só o valor (Editar valor) |
+| `editarPedido` | ✅ | Atualiza nome, telefone, produto, quantidade, entrega e detalhes (com validação server-side) |
 | `frete` | — | Taxa de entrega (ver `docs/TAXA-ENTREGA.md`) |
+
+## Faturamento (Fase 3)
+
+Botão **"📊 Caixa"** no cabeçalho abre o modal de faturamento, com dois `<input type="date">` (De / Até, padrão = mês corrente):
+
+- **Faturado (entregue):** soma do **valor do orçamento** dos pedidos **Atendidos** cuja **data de entrega efetiva** (coluna 16, com fallback para a prevista) cai no período. Mostra nº de pedidos e **ticket médio**.
+- **A receber (confirmado):** soma do valor dos pedidos **Confirmados** com data de entrega no período (fila de produção).
+- Lista os pedidos faturados (nº · nome · data · valor), ordenados por data de entrega.
+- O **frete não entra** no faturamento — é informativo no card; a receita é o orçamento.
+
+## Editar dados do pedido (Fase 3)
+
+O botão **✎** no topo de cada card abre "Editar dados" (nome, telefone, produto, quantidade, entrega/retirada, detalhes). Atualização otimista + `editarPedido` confirmável; validação no backend (`validarEdicao_`: nome/produto/quantidade obrigatórios, telefone ≥ 10 dígitos). Resolve o antigo problema de telefone/produto errados ficarem travados (só valor/data eram editáveis).
 
 `doPost` permanece como **compatibilidade** (clientes antigos em `no-cors`): `novoPedido` aberto, mutações exigem token.
 

@@ -115,6 +115,24 @@
     .btn-atualizar:hover { background: var(--navy-d); }
     .btn-atualizar.girando .ico { animation: spin .7s linear infinite; display:inline-block; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .adm-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-fat {
+      min-height: 44px;
+      padding: 0 16px;
+      background: #fff;
+      color: var(--navy);
+      border: 1.6px solid var(--navy);
+      border-radius: 10px;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 120ms, color 120ms;
+    }
+    .btn-fat:hover { background: var(--navy); color: #fff; }
 
     /* Filtros (sticky) */
     #filtros-wrap {
@@ -355,6 +373,55 @@
       font: inherit; font-size:1.05rem; font-weight:700; color:var(--ink);
     }
     .field-data input[type="date"]:focus { outline:0; border-color:var(--gold); box-shadow:0 0 0 4px rgba(232,179,92,.25); }
+
+    /* Campos de texto no modal (edição de dados) */
+    .field-text { margin-bottom: 14px; }
+    .field-text label {
+      display:block; font-size:.82rem; font-weight:800; color:var(--muted);
+      text-transform:uppercase; letter-spacing:.04em; margin-bottom: 7px;
+    }
+    .field-text input, .field-text textarea {
+      width:100%; min-height:52px; padding:14px 16px;
+      border:1.6px solid #dac9b0; border-radius:12px; background:#fdfbf7;
+      font: inherit; font-size:1.02rem; color:var(--ink); resize:vertical;
+    }
+    .field-text textarea { min-height:78px; line-height:1.45; }
+    .field-text input:focus, .field-text textarea:focus { outline:0; border-color:var(--gold); box-shadow:0 0 0 4px rgba(232,179,92,.25); }
+
+    /* Botão "editar dados" no topo do card */
+    .card-edit {
+      flex-shrink:0; border:1.4px solid #e3d4ba; background:#f6f1e8; color:var(--navy);
+      width:34px; height:34px; border-radius:9px; cursor:pointer;
+      font-size:.95rem; line-height:1; display:inline-flex; align-items:center; justify-content:center;
+      transition: background 120ms;
+    }
+    .card-edit:hover { background:#efe7d8; }
+    .card-top-right { display:flex; align-items:flex-start; gap:8px; flex-shrink:0; }
+
+    /* Faturamento */
+    .fat-periodo { display:flex; gap:10px; margin-bottom: 16px; }
+    .fat-periodo .field-data { flex:1; margin-bottom:0; }
+    .fat-cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+    .fat-card {
+      border-radius:12px; padding:13px 14px; border:1px solid;
+    }
+    .fat-card.fat-receita { background:linear-gradient(135deg,#e9f7ef,#ddf2e8); border-color:#c2e6d3; }
+    .fat-card.fat-prev    { background:linear-gradient(135deg,#eef4fb,#e2edfb); border-color:#cdddf0; }
+    .fat-card .fat-label { font-size:.66rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:800; }
+    .fat-card .fat-big   { font-size:1.32rem; font-weight:800; margin-top:4px; }
+    .fat-card.fat-receita .fat-big { color:var(--green); }
+    .fat-card.fat-prev .fat-big    { color:var(--blue); }
+    .fat-card .fat-sub   { font-size:.74rem; color:var(--muted); font-weight:700; margin-top:3px; }
+    .fat-lista-titulo { font-size:.78rem; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:.04em; margin: 4px 0 8px; }
+    .fat-linha {
+      display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+      padding:8px 0; border-bottom:1px solid #f0ece4; font-size:.9rem;
+    }
+    .fat-linha:last-child { border-bottom:0; }
+    .fat-linha .fl-nome { color:var(--ink); font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .fat-linha .fl-data { color:var(--muted); font-size:.78rem; font-weight:700; flex-shrink:0; }
+    .fat-linha .fl-valor { color:var(--green); font-weight:800; flex-shrink:0; }
+    .fat-vazio { text-align:center; color:var(--muted); font-size:.92rem; padding:20px 0; }
     .modal-foot {
       flex-shrink: 0; display: flex; gap: 10px;
       padding: 14px 22px calc(16px + env(safe-area-inset-bottom));
@@ -427,9 +494,12 @@
       <h1>Pedidos</h1>
       <div id="adm-contador"></div>
     </div>
-    <button class="btn-atualizar" id="btnAtualizar" onclick="carregarPedidos()" title="Recarregar lista">
-      <span class="ico">&#8635;</span> Atualizar
-    </button>
+    <div class="adm-actions">
+      <button class="btn-fat" onclick="abrirFaturamento()" title="Faturamento por período">📊 Caixa</button>
+      <button class="btn-atualizar" id="btnAtualizar" onclick="carregarPedidos()" title="Recarregar lista">
+        <span class="ico">&#8635;</span> Atualizar
+      </button>
+    </div>
   </div>
 
   <div id="filtros-wrap">
@@ -844,12 +914,17 @@
   function renderCard(p) {
     var status = p.status || 'Pendente';
     var wa = 'https://wa.me/55' + onlyDigits(p.telefone);
+    var idArg = "'" + esc(p.id).replace(/'/g, "\\'") + "'";
 
     var destaque = (status === 'Confirmado' || status === 'Atendido')
       ? renderDestaque(p, status === 'Atendido') : '';
 
     var detalhesHtml = p.detalhes
       ? '<div class="info-row"><span class="info-label">Detalhes</span><span class="info-value">' + esc(p.detalhes) + '</span></div>'
+      : '';
+
+    var freteHtml = (p.frete !== '' && p.frete != null)
+      ? '<div class="info-row"><span class="info-label">Taxa entrega</span><span class="info-value">' + esc(fmtReais(p.frete)) + '</span></div>'
       : '';
 
     // Linha de meta conforme o status
@@ -869,12 +944,16 @@
           + '<div class="card-nome">' + esc(p.nome) + '</div>'
           + '<div class="card-produto">' + esc(p.produto) + ' — ' + esc(p.quantidade) + '</div>'
         + '</div>'
-        + '<span class="badge badge-' + esc(status) + '"><span class="dot"></span>' + esc(status) + '</span>'
+        + '<div class="card-top-right">'
+          + '<span class="badge badge-' + esc(status) + '"><span class="dot"></span>' + esc(status) + '</span>'
+          + '<button class="card-edit" title="Editar dados do pedido" onclick="abrirEditar(' + idArg + ')">✎</button>'
+        + '</div>'
       + '</div>'
       + destaque
       + '<div class="card-info">'
         + '<div class="info-row"><span class="info-label">Entrega em</span><span class="info-value">' + esc(soData(p.data)) + '</span></div>'
         + '<div class="info-row"><span class="info-label">Retirada</span><span class="info-value">' + esc(p.entrega) + '</span></div>'
+        + freteHtml
         + '<div class="info-row"><span class="info-label">Telefone</span><span class="info-value"><a class="wa" href="' + esc(wa) + '" target="_blank" rel="noopener">📱 ' + esc(p.telefone) + '</a></span></div>'
         + detalhesHtml
         + '<div class="info-row"><span class="info-label">Pedido em</span><span class="info-value">' + esc(dataHora(p.enviado)) + '</span></div>'
@@ -1109,6 +1188,144 @@
         carregarPedidos();
       }
     });
+  }
+
+  // ── Editar dados do pedido (nome, telefone, produto, quantidade, entrega, detalhes) ──
+  function abrirEditar(id) {
+    var p = getPedido(id);
+    if (!p) return;
+    var num = numeroPedido(p);
+
+    abrirModal(
+      '<div class="modal-head"><div class="mh-num">Pedido ' + esc(num) + '</div><h2>Editar dados</h2></div>'
+      + '<div class="modal-body">'
+        + '<div class="field-text"><label>Nome</label><input id="edNome" type="text" value="' + esc(p.nome) + '"></div>'
+        + '<div class="field-text"><label>Telefone</label><input id="edTel" type="tel" inputmode="tel" value="' + esc(p.telefone) + '"></div>'
+        + '<div class="field-text"><label>Produto</label><input id="edProd" type="text" value="' + esc(p.produto) + '"></div>'
+        + '<div class="field-text"><label>Quantidade</label><input id="edQtd" type="text" value="' + esc(p.quantidade) + '"></div>'
+        + '<div class="field-text"><label>Entrega / retirada</label><input id="edEntrega" type="text" value="' + esc(p.entrega) + '"></div>'
+        + '<div class="field-text"><label>Detalhes</label><textarea id="edDet">' + esc(p.detalhes || '') + '</textarea></div>'
+      + '</div>'
+      + '<div class="modal-foot">'
+        + '<button class="mf-cancel" id="mCancel">Voltar</button>'
+        + '<button class="mf-ok-gold" id="mOk">Salvar dados</button>'
+      + '</div>'
+    );
+
+    el('mCancel').onclick = fecharModal;
+    el('mOk').onclick = function () {
+      var campos = {
+        nome:       el('edNome').value.trim(),
+        telefone:   el('edTel').value.trim(),
+        produto:    el('edProd').value.trim(),
+        quantidade: el('edQtd').value.trim(),
+        entrega:    el('edEntrega').value.trim(),
+        detalhes:   el('edDet').value.trim()
+      };
+      if (!campos.nome)                       { toast('Informe o nome.', 'warning'); el('edNome').focus(); return; }
+      if (onlyDigits(campos.telefone).length < 10) { toast('Telefone inválido (mínimo 10 dígitos).', 'warning'); el('edTel').focus(); return; }
+      if (!campos.produto)                    { toast('Informe o produto.', 'warning'); el('edProd').focus(); return; }
+      if (!campos.quantidade)                 { toast('Informe a quantidade.', 'warning'); el('edQtd').focus(); return; }
+      fecharModal();
+      editarPedido(id, campos);
+    };
+  }
+
+  function editarPedido(id, campos) {
+    var p = getPedido(id);
+    if (!p) return;
+    p.nome = campos.nome; p.telefone = campos.telefone; p.produto = campos.produto;
+    p.quantidade = campos.quantidade; p.entrega = campos.entrega; p.detalhes = campos.detalhes;
+    renderizarFiltro();
+    atualizarContadores();
+    toast('Dados do pedido ' + numeroPedido(p) + ' atualizados.', 'success');
+    if (!SCRIPT_URL) return;
+    var body = { action: 'editarPedido', id: id };
+    Object.keys(campos).forEach(function (k) { body[k] = campos[k]; });
+    jsonp(comToken(body), function (res) {
+      if (res && res.erro === 'NAO_AUTORIZADO') { sessaoInvalida(); return; }
+      if (!res || !res.ok) {
+        toast('Falha ao salvar os dados' + ((res && res.msg) ? ' (' + res.msg + ')' : '') + '. Recarregando…', 'error', 5000);
+        carregarPedidos();
+      }
+    });
+  }
+
+  // ── Faturamento (soma por período) ────────────────────────────
+  // Receita = pedidos Atendidos pela data de entrega efetiva; previsto = Confirmados pela data de entrega.
+  function chaveDataEfetiva(p) { return paraInputDate(p && p.entregueEm) || paraInputDate(p && p.data) || ''; }
+
+  function mesAtualBounds() {
+    var hoje = hojeInput();                 // YYYY-MM-DD (America/Belem)
+    var ym = hoje.slice(0, 7);
+    var y = +ym.slice(0, 4), m = +ym.slice(5, 7);
+    var ult = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return { de: ym + '-01', ate: ym + '-' + (ult < 10 ? '0' + ult : '' + ult) };
+  }
+
+  function abrirFaturamento() {
+    var b = mesAtualBounds();
+    abrirModal(
+      '<div class="modal-head"><h2>📊 Faturamento</h2><div class="mh-num">Some o caixa por período (data de entrega)</div></div>'
+      + '<div class="modal-body">'
+        + '<div class="fat-periodo">'
+          + '<div class="field-data"><div class="money-label">De</div><input type="date" id="fatDe" value="' + esc(b.de) + '"></div>'
+          + '<div class="field-data"><div class="money-label">Até</div><input type="date" id="fatAte" value="' + esc(b.ate) + '"></div>'
+        + '</div>'
+        + '<div id="fatResultado"></div>'
+      + '</div>'
+      + '<div class="modal-foot"><button class="mf-cancel" id="mCancel">Fechar</button></div>'
+    );
+    el('mCancel').onclick = fecharModal;
+    el('fatDe').addEventListener('change', renderFaturamento);
+    el('fatAte').addEventListener('change', renderFaturamento);
+    renderFaturamento();
+  }
+
+  function renderFaturamento() {
+    var de = el('fatDe').value, ate = el('fatAte').value;
+    var box = el('fatResultado');
+    if (!de || !ate) { box.innerHTML = '<div class="fat-vazio">Selecione o período.</div>'; return; }
+    if (de > ate) { var tmp = de; de = ate; ate = tmp; }
+
+    var atendidos = [], totFat = 0, totPrev = 0, nPrev = 0;
+    for (var i = 0; i < todosPedidos.length; i++) {
+      var p = todosPedidos[i];
+      var v = parseInt(p.valor, 10) || 0;
+      var st = p.status || 'Pendente';
+      if (st === 'Atendido') {
+        var k = chaveDataEfetiva(p);
+        if (k && k >= de && k <= ate) { atendidos.push(p); totFat += v; }
+      } else if (st === 'Confirmado') {
+        var kc = chaveData(p);
+        if (kc && kc >= de && kc <= ate) { totPrev += v; nPrev++; }
+      }
+    }
+
+    var ticket = atendidos.length ? Math.round(totFat / atendidos.length) : 0;
+    var linhas = ordenarPorEntrega(atendidos).map(function (p) {
+      return '<div class="fat-linha">'
+        + '<span class="fl-nome">' + esc(numeroPedido(p)) + ' · ' + esc(p.nome) + '</span>'
+        + '<span class="fl-data">' + esc(soData(chaveDataEfetiva(p))) + '</span>'
+        + '<span class="fl-valor">' + esc(fmtReais(p.valor)) + '</span>'
+        + '</div>';
+    }).join('');
+
+    box.innerHTML =
+      '<div class="fat-cards">'
+        + '<div class="fat-card fat-receita">'
+          + '<div class="fat-label">Faturado (entregue)</div>'
+          + '<div class="fat-big">R$ ' + fmtCentavos(totFat) + '</div>'
+          + '<div class="fat-sub">' + atendidos.length + (atendidos.length === 1 ? ' pedido · ticket ' : ' pedidos · ticket ') + 'R$ ' + fmtCentavos(ticket) + '</div>'
+        + '</div>'
+        + '<div class="fat-card fat-prev">'
+          + '<div class="fat-label">A receber (confirmado)</div>'
+          + '<div class="fat-big">R$ ' + fmtCentavos(totPrev) + '</div>'
+          + '<div class="fat-sub">' + nPrev + (nPrev === 1 ? ' pedido na fila' : ' pedidos na fila') + '</div>'
+        + '</div>'
+      + '</div>'
+      + '<div class="fat-lista-titulo">Pedidos faturados no período</div>'
+      + (linhas || '<div class="fat-vazio">Nenhum pedido entregue neste período.</div>');
   }
 
   // ── Init ──────────────────────────────────────────────────────

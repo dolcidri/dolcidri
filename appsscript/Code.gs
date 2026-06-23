@@ -33,7 +33,7 @@ var C = {
   QUANTIDADE: 6, DATA: 7, ENTREGA: 8, DETALHES: 9,
   STATUS: 10, ATENDIDO_EM: 11,
   NUMERO: 12, VALOR: 13, CONFIRMADO_EM: 14, CANCELADO_EM: 15,
-  ENTREGUE_EM: 16
+  ENTREGUE_EM: 16, FRETE: 17
 };
 
 var HEADERS = [
@@ -41,7 +41,7 @@ var HEADERS = [
   'Quantidade', 'Data desejada', 'Entrega', 'Detalhes',
   'Status', 'Atendido em',
   'Número', 'Valor (centavos)', 'Confirmado em', 'Cancelado em',
-  'Entregue em (efetiva)'
+  'Entregue em (efetiva)', 'Frete (centavos)'
 ];
 
 function agoraBR_() {
@@ -209,7 +209,7 @@ function handleNovoPedido_(p) {
       p.nome, p.telefone, p.produto, p.quantidade,
       p.data, p.entrega, p.detalhes || '',
       'Pendente', '',
-      numero, '', '', '', ''
+      numero, '', '', '', '', (p.frete || '')
     ]);
     SpreadsheetApp.flush();
     return { ok: true, numero: numero };
@@ -265,6 +265,32 @@ function handleDefinirValor_(p) {
   return { ok: true };
 }
 
+// Edição dos dados do pedido (nome, telefone, produto, quantidade, entrega, detalhes).
+// Conserta cadastros errados que antes ficavam travados (só valor/data eram editáveis).
+function validarEdicao_(p) {
+  if (!p.nome || !String(p.nome).trim())             return 'Nome obrigatório.';
+  if (onlyDigits_(p.telefone).length < 10)           return 'Telefone inválido (mínimo 10 dígitos).';
+  if (!p.produto || !String(p.produto).trim())       return 'Produto obrigatório.';
+  if (!p.quantidade || !String(p.quantidade).trim()) return 'Quantidade obrigatória.';
+  return null;
+}
+
+function handleEditarPedido_(p) {
+  var sh = getSheet_();
+  var r  = linhaPorId_(sh, p.id);
+  if (r <= 0) return { ok: false, msg: 'Pedido não encontrado.' };
+  var erro = validarEdicao_(p);
+  if (erro) return { ok: false, msg: erro };
+  sh.getRange(r, C.NOME).setValue(p.nome);
+  sh.getRange(r, C.TELEFONE).setValue(p.telefone);
+  sh.getRange(r, C.PRODUTO).setValue(p.produto);
+  sh.getRange(r, C.QUANTIDADE).setValue(p.quantidade);
+  if (p.entrega  !== undefined) sh.getRange(r, C.ENTREGA).setValue(p.entrega);
+  if (p.detalhes !== undefined) sh.getRange(r, C.DETALHES).setValue(p.detalhes);
+  SpreadsheetApp.flush();
+  return { ok: true };
+}
+
 function handleListar_() {
   var sh   = getSheet_();
   var rows = sh.getDataRange().getValues();
@@ -288,7 +314,8 @@ function handleListar_() {
       confirmadoEm: r[C.CONFIRMADO_EM - 1],
       atendidoEm:   r[C.ATENDIDO_EM - 1],
       canceladoEm:  r[C.CANCELADO_EM - 1],
-      entregueEm:   r[C.ENTREGUE_EM - 1]
+      entregueEm:   r[C.ENTREGUE_EM - 1],
+      frete:        r[C.FRETE - 1]
     });
   }
   pedidos.reverse(); // mais recente primeiro
@@ -327,6 +354,8 @@ function doGet(e) {
     result = tokenOk_(p) ? handleAtualizarStatus_(p) : { ok: false, erro: 'NAO_AUTORIZADO' };
   } else if (action === 'definirValor') {
     result = tokenOk_(p) ? handleDefinirValor_(p)    : { ok: false, erro: 'NAO_AUTORIZADO' };
+  } else if (action === 'editarPedido') {
+    result = tokenOk_(p) ? handleEditarPedido_(p)    : { ok: false, erro: 'NAO_AUTORIZADO' };
   } else {
     result = { ok: false, msg: 'Ação desconhecida.' };
   }
@@ -345,6 +374,8 @@ function doPost(e) {
       if (tokenOk_(data)) handleAtualizarStatus_(data);
     } else if (data.action === 'definirValor') {
       if (tokenOk_(data)) handleDefinirValor_(data);
+    } else if (data.action === 'editarPedido') {
+      if (tokenOk_(data)) handleEditarPedido_(data);
     }
     return ContentService.createTextOutput('ok')
       .setMimeType(ContentService.MimeType.TEXT);
