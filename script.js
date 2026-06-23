@@ -470,21 +470,13 @@ orderForm.addEventListener("submit", function (event) {
     return;
   }
 
-  // Abre WhatsApp direto no número certo (sem ?text= para evitar corrupção de emoji via URL)
-  window.open("https://wa.me/" + siteConfig.whatsappNumber, "_blank", "noopener,noreferrer");
-
-  // Copia a mensagem com emoji para a área de transferência
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(message)
-      .then(function () {
-        addToast("Mensagem copiada! Cole no chat da Dolci Dri no WhatsApp.", "success", 6000);
-      })
-      .catch(function () {
-        addToast("WhatsApp aberto!", "success");
-      });
-  } else {
-    addToast("WhatsApp aberto!", "success");
-  }
+  // Abre o WhatsApp já com a mensagem preenchida (?text= em UTF-8 via encodeURIComponent — emoji passa intacto)
+  window.open(
+    "https://wa.me/" + siteConfig.whatsappNumber + "?text=" + encodeURIComponent(message),
+    "_blank",
+    "noopener,noreferrer"
+  );
+  addToast("WhatsApp aberto com o seu pedido. É só enviar!", "success", 5000);
 
   saveOrder(data);
   resetForm();
