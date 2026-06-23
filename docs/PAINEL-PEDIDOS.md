@@ -40,6 +40,11 @@ Toda troca que **sai de** um estado já processado (`Confirmado`, `Atendido` ou 
 - Input estilo **calculadora**: dígitos entram pela direita (`1` → `0,01`, `123456` → `1.234,56`).
 - Armazenado sempre em **centavos** (inteiro) na planilha; a formatação `R$ 1.234,56` (pt-BR) é só na UI.
 
+### Resumo do card (Confirmado/Atendido)
+
+- Quando o pedido tem **frete** (entrega em endereço), o destaque mostra 4 colunas — rótulos em cima, valores embaixo: **Valor do orçamento · Taxa de entrega · Valor total · Data de entrega**. `Valor total = orçamento + taxa` (somados em centavos). Pedido de **retirada** (sem frete) mantém 2 colunas (Orçamento · Data), sem poluir com "Taxa R$ 0,00".
+- A linha de endereço do card rotula conforme o tipo: **"Retirada"** para retirada no local; **"🚗 Entrega"** para entrega em endereço (detectado pelo prefixo do campo `entrega`).
+
 ### Data de entrega editável
 
 - O modal "Confirmar pedido" / "Editar" tem um `<input type="date">` pré-preenchido com a data atual; a Adriana pode ajustar antes de confirmar.
