@@ -152,6 +152,31 @@
     }
     #filtros button.ativo { background: var(--navy); color: #fff; border-color: var(--navy); }
     #filtros button.ativo .pill { background: rgba(255,255,255,.22); color: #fff; }
+    #filtros .pill.pill-alert.on { background: var(--red); color: #fff; }
+    .filtro-sep { flex-shrink: 0; width: 1px; align-self: stretch; background: #d9c6a8; margin: 4px 2px; }
+
+    /* Busca */
+    .busca-wrap {
+      display: flex; align-items: center; gap: 8px;
+      background: #fff; border: 1.5px solid #cdb79a; border-radius: 12px;
+      padding: 0 12px; min-height: 46px; margin-bottom: 10px;
+    }
+    .busca-wrap:focus-within { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(232,179,92,.22); }
+    .busca-wrap .busca-ico { font-size: 1rem; opacity: .6; flex-shrink: 0; }
+    .busca-wrap input {
+      flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
+      font: inherit; font-size: 1rem; color: var(--ink);
+    }
+    .busca-wrap input::-webkit-search-cancel-button { display: none; }
+    .busca-clear {
+      flex-shrink: 0; border: 0; background: #efe3cf; color: var(--navy);
+      width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+      font-size: .78rem; font-weight: 800; line-height: 1;
+      display: none; align-items: center; justify-content: center;
+    }
+    .busca-clear.show { display: inline-flex; }
+    .busca-info { display: none; font-size: .78rem; color: var(--muted); font-weight: 700; margin: -2px 2px 8px; }
+    .busca-info.show { display: block; }
 
     /* Cards */
     .card {
@@ -410,13 +435,24 @@
   </div>
 
   <div id="filtros-wrap">
+    <div class="busca-wrap">
+      <span class="busca-ico">🔍</span>
+      <input id="busca" type="search" inputmode="search" autocomplete="off" spellcheck="false"
+             placeholder="Buscar nome, telefone ou nº do pedido">
+      <button id="buscaClear" class="busca-clear" type="button" title="Limpar busca" aria-label="Limpar busca">✕</button>
+    </div>
     <div id="filtros">
+      <button data-f="Hoje"                  onclick="filtrar(this)">Hoje <span class="pill" data-c="Hoje">0</span></button>
+      <button data-f="Atrasados"             onclick="filtrar(this)">Atrasados <span class="pill pill-alert" data-c="Atrasados">0</span></button>
+      <button data-f="7dias"                 onclick="filtrar(this)">7 dias <span class="pill" data-c="7dias">0</span></button>
+      <span class="filtro-sep"></span>
       <button data-f="Pendente"  class="ativo" onclick="filtrar(this)">Pendentes <span class="pill" data-c="Pendente">0</span></button>
       <button data-f="Confirmado"            onclick="filtrar(this)">Confirmados <span class="pill" data-c="Confirmado">0</span></button>
       <button data-f="Atendido"              onclick="filtrar(this)">Atendidos <span class="pill" data-c="Atendido">0</span></button>
       <button data-f="Cancelado"             onclick="filtrar(this)">Cancelados <span class="pill" data-c="Cancelado">0</span></button>
       <button data-f="Todos"                 onclick="filtrar(this)">Todos</button>
     </div>
+    <div class="busca-info" id="buscaInfo"></div>
   </div>
 
   <div id="loading">Carregando pedidos…</div>
@@ -539,6 +575,62 @@
     return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Belem' });
   }
 
+  // ── Busca e visões por data ───────────────────────────────────
+  function normaliza(s) {
+    return String(s == null ? '' : s).toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  // Data de entrega do pedido como chave comparável YYYY-MM-DD ('' se não parseável).
+  function chaveData(p) { return paraInputDate(p && p.data) || ''; }
+
+  // Aritmética de data segura (UTC, sem drift de fuso) sobre YYYY-MM-DD.
+  function addDiasISO(iso, n) {
+    var a = String(iso).split('-');
+    var d = new Date(Date.UTC(+a[0], +a[1] - 1, +a[2]));
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Pedido "aberto" = ainda na operação (Pendente ou Confirmado).
+  function ehAberto(p) { var s = p.status || 'Pendente'; return s === 'Pendente' || s === 'Confirmado'; }
+
+  // Pertence à visão de data? (só conta pedidos abertos)
+  function naVisaoData(p, view, hoje) {
+    if (!ehAberto(p)) return false;
+    var k = chaveData(p);
+    if (!k) return false;
+    if (view === 'Hoje')      return k === hoje;
+    if (view === 'Atrasados') return k < hoje;
+    if (view === '7dias')     return k >= hoje && k <= addDiasISO(hoje, 6);
+    return false;
+  }
+
+  // Casamento da busca: nome (sem acento), telefone (dígitos) ou número do pedido.
+  function matchBusca(p, termo) {
+    var t = normaliza(termo).trim();
+    if (!t) return true;
+    if (normaliza(p.nome).indexOf(t) >= 0) return true;
+    var d = onlyDigits(termo);
+    if (d) {
+      if (onlyDigits(p.telefone).indexOf(d) >= 0) return true;
+      if (n3(p.numero).indexOf(d) >= 0) return true;
+      if (String(p.numero || '') === String(parseInt(d, 10))) return true;
+    }
+    return false;
+  }
+
+  // Ordena por data de entrega (mais próximo primeiro); sem data vai pro fim.
+  function ordenarPorEntrega(arr) {
+    return arr.slice().sort(function (x, y) {
+      var dx = chaveData(x) || '9999-99-99';
+      var dy = chaveData(y) || '9999-99-99';
+      if (dx < dy) return -1;
+      if (dx > dy) return 1;
+      return (parseInt(x.numero, 10) || 0) - (parseInt(y.numero, 10) || 0);
+    });
+  }
+
   // ── Toast ─────────────────────────────────────────────────────
   function toast(msg, tipo, ms) {
     tipo = tipo || 'info'; ms = ms || 3400;
@@ -616,6 +708,7 @@
   // ── Filtros ───────────────────────────────────────────────────
   function filtrar(btn) {
     filtroAtual = btn.dataset.f;
+    if (el('busca').value) { el('busca').value = ''; el('buscaClear').classList.remove('show'); }
     document.querySelectorAll('#filtros button').forEach(function (b) {
       b.classList.toggle('ativo', b === btn);
     });
@@ -623,17 +716,47 @@
   }
 
   // ── Renderização ──────────────────────────────────────────────
+  function mensagemVazio(termo) {
+    if (termo) return '<span class="emoji">🔍</span>Ninguém encontrado para “' + esc(termo) + '”.';
+    if (todosPedidos.length === 0)
+      return '<span class="emoji">🍰</span>Nenhum pedido cadastrado ainda.<br>Eles aparecerão aqui assim que chegarem pelo site.';
+    return ({
+      'Hoje':      '<span class="emoji">☀️</span>Nada para entregar hoje.',
+      'Atrasados': '<span class="emoji">✅</span>Nenhum pedido atrasado.',
+      '7dias':     '<span class="emoji">🗓️</span>Nada nos próximos 7 dias.'
+    }[filtroAtual]) || '<span class="emoji">✨</span>Nenhum pedido nesta categoria.';
+  }
+
   function renderizarFiltro() {
-    var lista = el('lista'), vazio = el('vazio');
-    var exibir = filtroAtual === 'Todos'
-      ? todosPedidos
-      : todosPedidos.filter(function (p) { return (p.status || 'Pendente') === filtroAtual; });
+    var lista = el('lista'), vazio = el('vazio'), info = el('buscaInfo');
+    var termo = (el('busca') ? el('busca').value : '').trim();
+    var hoje  = hojeInput();
+    var exibir, ordenarData = true;
+
+    if (termo) {
+      // Busca varre TODOS os status — para localizar qualquer pessoa.
+      exibir = todosPedidos.filter(function (p) { return matchBusca(p, termo); });
+      info.textContent = 'Busca em todos os status — ' + exibir.length + (exibir.length === 1 ? ' resultado' : ' resultados');
+      info.classList.add('show');
+    } else {
+      info.classList.remove('show');
+      info.textContent = '';
+      if (filtroAtual === 'Hoje' || filtroAtual === 'Atrasados' || filtroAtual === '7dias') {
+        exibir = todosPedidos.filter(function (p) { return naVisaoData(p, filtroAtual, hoje); });
+      } else if (filtroAtual === 'Todos') {
+        exibir = todosPedidos.slice();
+        ordenarData = false; // mantém ordem do backend (mais recente primeiro)
+      } else {
+        exibir = todosPedidos.filter(function (p) { return (p.status || 'Pendente') === filtroAtual; });
+        ordenarData = (filtroAtual === 'Pendente' || filtroAtual === 'Confirmado');
+      }
+    }
+
+    if (termo || ordenarData) exibir = ordenarPorEntrega(exibir);
 
     if (exibir.length === 0) {
       lista.innerHTML = '';
-      vazio.innerHTML = todosPedidos.length === 0
-        ? '<span class="emoji">🍰</span>Nenhum pedido cadastrado ainda.<br>Eles aparecerão aqui assim que chegarem pelo site.'
-        : '<span class="emoji">✨</span>Nenhum pedido nesta categoria.';
+      vazio.innerHTML = mensagemVazio(termo);
       vazio.style.display = 'block';
     } else {
       vazio.style.display = 'none';
@@ -722,23 +845,30 @@
   }
 
   // ── Contadores ────────────────────────────────────────────────
-  function contar(status) {
-    var n = 0;
-    for (var i = 0; i < todosPedidos.length; i++)
-      if ((todosPedidos[i].status || 'Pendente') === status) n++;
-    return n;
-  }
   function atualizarContadores() {
-    var p = contar('Pendente'), c = contar('Confirmado');
-    ['Pendente', 'Confirmado', 'Atendido', 'Cancelado'].forEach(function (s) {
-      var pill = document.querySelector('#filtros .pill[data-c="' + s + '"]');
-      if (pill) pill.textContent = contar(s);
+    var hoje = hojeInput();
+    var cont = { Pendente: 0, Confirmado: 0, Atendido: 0, Cancelado: 0, Hoje: 0, Atrasados: 0, '7dias': 0 };
+    for (var i = 0; i < todosPedidos.length; i++) {
+      var p = todosPedidos[i];
+      var s = p.status || 'Pendente';
+      if (cont[s] != null) cont[s]++;
+      if (naVisaoData(p, 'Hoje', hoje))      cont.Hoje++;
+      if (naVisaoData(p, 'Atrasados', hoje)) cont.Atrasados++;
+      if (naVisaoData(p, '7dias', hoje))     cont['7dias']++;
+    }
+    Object.keys(cont).forEach(function (k) {
+      var pill = document.querySelector('#filtros .pill[data-c="' + k + '"]');
+      if (pill) pill.textContent = cont[k];
     });
+    var alerta = document.querySelector('#filtros .pill[data-c="Atrasados"]');
+    if (alerta) alerta.classList.toggle('on', cont.Atrasados > 0);
+
     var partes = [];
-    if (p > 0) partes.push(p + (p === 1 ? ' pedido pendente' : ' pedidos pendentes'));
-    if (c > 0) partes.push(c + (c === 1 ? ' a entregar' : ' a entregar'));
+    if (cont.Pendente > 0)  partes.push(cont.Pendente + (cont.Pendente === 1 ? ' pendente' : ' pendentes'));
+    if (cont.Hoje > 0)      partes.push(cont.Hoje + ' p/ hoje');
+    if (cont.Atrasados > 0) partes.push('⚠️ ' + cont.Atrasados + (cont.Atrasados === 1 ? ' atrasado' : ' atrasados'));
     el('adm-contador').textContent = partes.length ? partes.join(' · ') : 'Tudo em dia ✓';
-    document.title = (p > 0 ? '(' + p + ') ' : '') + 'Admin — Dolci Dri';
+    document.title = (cont.Atrasados > 0 ? '⚠️ ' : (cont.Pendente > 0 ? '(' + cont.Pendente + ') ' : '')) + 'Admin — Dolci Dri';
   }
 
   function getPedido(id) {
@@ -922,6 +1052,7 @@
     p.valor = valorCentavos;
     if (dataBR) p.data = dataBR;
     renderizarFiltro();
+    atualizarContadores();
     toast('Pedido ' + numeroPedido(p) + ' atualizado.', 'success');
     if (!SCRIPT_URL) return;
     var body = { action: 'definirValor', id: id, valor: valorCentavos };
@@ -932,6 +1063,16 @@
 
   // ── Init ──────────────────────────────────────────────────────
   el('senha').addEventListener('keydown', function (e) { if (e.key === 'Enter') entrar(); });
+  el('busca').addEventListener('input', function () {
+    el('buscaClear').classList.toggle('show', !!el('busca').value);
+    renderizarFiltro();
+  });
+  el('buscaClear').addEventListener('click', function () {
+    el('busca').value = '';
+    el('buscaClear').classList.remove('show');
+    el('busca').focus();
+    renderizarFiltro();
+  });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && el('modal').classList.contains('show')) fecharModal();
   });
