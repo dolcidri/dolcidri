@@ -18,6 +18,7 @@ Abra `index.html` no navegador.
 - `assets/logo-dolci-dri.png`: logo extraída dos PDFs da marca.
 - `assets/hero-bolo-artesanal.jpg`: hero com o bolo real já existente.
 - `assets/products/bolo-verde-amarelo.jpg`: produto com foto real.
+- `assets/products/bolo-de-milho-gramado.png`: bolo de milho com foto real.
 - `assets/products/*-ilustrativo.jpg`: mockups visuais temporários para simular categorias de produto.
 - `assets/products/video mesa sem audio.mp4`: vídeo exibido na vitrine de produtos com controles nativos, sem trilha de áudio.
 - `assets/products/video mesa.mp4`: vídeo original, mantido como backup.
